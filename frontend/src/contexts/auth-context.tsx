@@ -12,13 +12,19 @@ interface UserProfile {
     restaurant_id: string | null
 }
 
+// ... imports
+
 interface AuthContextType {
     user: User | null
     profile: UserProfile | null
     restaurantId: string | null
+    isEmailVerified: boolean
     isLoading: boolean
     error: string | null
     refetch: () => Promise<void>
+    // Agency features
+    selectedRestaurantId: string | null
+    setSelectedRestaurantId: (id: string | null) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -29,9 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
+    // Agency impersonation state
+    const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null)
+
     const supabase = createClient()
 
     async function fetchProfile() {
+        // ... existing fetchProfile logic ...
         try {
             setIsLoading(true)
             setError(null)
@@ -46,7 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             setUser(currentUser)
 
-            // Fetch profile using RPC function
             const { data: profileData, error: profileError } = await supabase
                 .rpc('get_my_profile')
                 .single()
@@ -58,6 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             setProfile(profileData as UserProfile)
+
+            // If agency admin, we might auto-select first restaurant or keep it null
+            // For now, keep it null until they select one
+
         } catch (err) {
             console.error('Auth context error:', err)
             setError('Authentication error')
@@ -69,13 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         fetchProfile()
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 await fetchProfile()
             } else if (event === 'SIGNED_OUT') {
                 setUser(null)
                 setProfile(null)
+                setSelectedRestaurantId(null)
             }
         })
 
@@ -84,17 +97,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [])
 
+    // Determine the active restaurant ID
+    // 1. If impersonating (agency admin selected a restaurant), use that.
+    // 2. Otherwise use the user's direct restaurant_id
+    const activeRestaurantId = selectedRestaurantId || profile?.restaurant_id || null
+
     const value: AuthContextType = {
         user,
         profile,
-        restaurantId: profile?.restaurant_id ?? null,
+        restaurantId: activeRestaurantId,
+        isEmailVerified: user?.email_confirmed_at ? true : false,
         isLoading,
         error,
         refetch: fetchProfile,
+        selectedRestaurantId,
+        setSelectedRestaurantId
     }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+
+// ... hooks
 
 export function useAuth() {
     const context = useContext(AuthContext)

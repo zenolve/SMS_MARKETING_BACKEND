@@ -1,0 +1,272 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\malik\OneDrive\Desktop\sms
+plugins: anyio-4.12.1, asyncio-1.3.0, respx-0.22.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3 items
+
+tests\test_campaign_router.py FFF                                        [100%]
+
+================================== FAILURES ===================================
+________________________ test_create_campaign_endpoint ________________________
+
+mock_db = <MagicMock name='get_db()' id='2234419179552'>
+
+    def test_create_campaign_endpoint(mock_db):
+        payload = {
+            "restaurant_id": str(uuid.uuid4()),
+            "name": "Test Campaign",
+            "message_template": "Hello {first_name}",
+            "schedule_type": "one_time"
+        }
+    
+        mock_db.table().insert().execute.return_value = MagicMock(data=[{"id": str(uuid.uuid4()), **payload, "status": "draft"}])
+    
+>       response = client.post("/campaigns", json=payload)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_campaign_router.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:546: in post
+    return super().post(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1144: in post
+    return self.request(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:445: in request
+    return super().request(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:914: in send
+    response = self._send_handling_auth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:348: in handle_request
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py:334: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py:259: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\applications.py:1135: in __call__
+    await super().__call__(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\applications.py:107: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\cors.py:85: in __call__
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:716: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:736: in app
+    await route.handle(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:290: in handle
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:115: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:101: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:355: in app
+    raw_response = await run_endpoint_function(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:243: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+routers\campaigns.py:49: in create_campaign
+    result = db.table("scheduled_campaigns").insert(serialized_data).execute()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <postgrest._sync.request_builder.SyncQueryRequestBuilder object at 0x000002083DC78050>
+
+    def execute(self) -> APIResponse:
+        """Execute the query.
+    
+        .. tip::
+            This is the last method called, after the query is built.
+    
+        Returns:
+            :class:`APIResponse`
+    
+        Raises:
+            :class:`APIError` If the API raised an error.
+        """
+        r = self.request.send()
+        try:
+            if r.is_success:
+                return APIResponse.from_http_request_response(r)
+            else:
+                json_obj = model_validate_json(APIErrorFromJSON, r.content)
+>               raise APIError(dict(json_obj))
+E               postgrest.exceptions.APIError: {'message': 'insert or update on table "scheduled_campaigns" violates foreign key constraint "campaigns_restaurant_id_fkey"', 'code': '23503', 'hint': None, 'details': 'Key (restaurant_id)=(3909e33c-270a-4bdd-8b65-857f43acb9c8) is not present in table "restaurants".'}
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\postgrest\_sync\request_builder.py:53: APIError
+______________________ test_schedule_validation_failure _______________________
+
+mock_db = <MagicMock name='get_db()' id='2234419946768'>
+
+    def test_schedule_validation_failure(mock_db):
+        # Try to update a campaign with a scheduled_at too close to now
+        soon_time = datetime.now(timezone.utc) + timedelta(minutes=5)
+        campaign_id = str(uuid.uuid4())
+    
+        mock_db.table().select().eq().execute.return_value = MagicMock(data=[{"status": "draft"}])
+    
+        payload = {
+            "scheduled_at": soon_time.isoformat()
+        }
+    
+        response = client.patch(f"/campaigns/{campaign_id}", json=payload)
+>       assert response.status_code == 400
+E       assert 404 == 400
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\test_campaign_router.py:43: AssertionError
+______________________ test_schedule_validation_success _______________________
+
+mock_db = <MagicMock name='get_db()' id='2234419994672'>
+
+    def test_schedule_validation_success(mock_db):
+        # Try to update a campaign with a valid future time (30 mins)
+        future_time = datetime.now(timezone.utc) + timedelta(minutes=30)
+        campaign_id = str(uuid.uuid4())
+    
+        mock_db.table().select().eq().execute.return_value = MagicMock(data=[{"status": "draft"}])
+        mock_db.table().update().eq().execute.return_value = MagicMock(data=[{"id": campaign_id, "status": "draft", "scheduled_at": future_time.isoformat()}])
+    
+        payload = {
+            "scheduled_at": future_time.isoformat()
+        }
+    
+        response = client.patch(f"/campaigns/{campaign_id}", json=payload)
+>       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\test_campaign_router.py:59: AssertionError
+============================== warnings summary ===============================
+config.py:5
+  C:\Users\malik\OneDrive\Desktop\sms\config.py:5: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:72
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:72: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85: PyparsingDeprecationWarning: 'escChar' argument is deprecated, use 'esc_char'
+    quoted_identifier = QuotedString('"', escChar="\\", unquoteResults=True)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85: PyparsingDeprecationWarning: 'unquoteResults' argument is deprecated, use 'unquote_results'
+    quoted_identifier = QuotedString('"', escChar="\\", unquoteResults=True)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:365
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:365: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:494
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:494: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:498
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:498: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:502
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:502: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:506
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:506: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:538
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:538: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:542
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:542: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:546
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:546: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:550
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:550: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+models\schemas.py:26
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:26: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Agency(AgencyBase):
+
+models\schemas.py:63
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:63: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Restaurant(RestaurantBase):
+
+models\schemas.py:102
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:102: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Customer(CustomerBase):
+
+models\schemas.py:141
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:141: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Campaign(CampaignBase):
+
+models\schemas.py:160
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:160: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class SMSMessage(BaseModel):
+
+models\schemas.py:182
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:182: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UsageRecord(BaseModel):
+
+models\schemas.py:199
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:199: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TwilioStatusCallback(BaseModel):
+
+models\schemas.py:212
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:212: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TwilioIncomingMessage(BaseModel):
+
+tests/test_campaign_router.py::test_create_campaign_endpoint
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\supabase\_sync\client.py:309: DeprecationWarning: The 'timeout' parameter is deprecated. Please configure it in the http client instead.
+    return SyncPostgrestClient(
+
+tests/test_campaign_router.py::test_create_campaign_endpoint
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\supabase\_sync\client.py:309: DeprecationWarning: The 'verify' parameter is deprecated. Please configure it in the http client instead.
+    return SyncPostgrestClient(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_campaign_router.py::test_create_campaign_endpoint - postgre...
+FAILED tests/test_campaign_router.py::test_schedule_validation_failure - asse...
+FAILED tests/test_campaign_router.py::test_schedule_validation_success - asse...
+======================= 3 failed, 23 warnings in 6.50s ========================

@@ -18,26 +18,30 @@ export default function PendingApprovalPage() {
     }
 
     async function checkStatus() {
-        const { data: { user } } = await supabase.auth.getUser()
+        // 1. Check current session
+        const { data: { user }, error } = await supabase.auth.getUser()
 
-        if (!user) {
+        if (error || !user) {
             window.location.href = '/login'
             return
         }
 
-        // Query user_profiles table for verification status
+        // 2. Check Email Verification
+        if (!user.email_confirmed_at) {
+            toast.error('Please verify your email address first.')
+            return
+        }
+
+        // 3. User is verified, check Admin Approval via Profile
         const { data: profile } = await supabase
             .from('user_profiles')
             .select('role, is_verified')
             .eq('id', user.id)
             .maybeSingle()
 
-        console.log('Check status profile:', profile)
-
         if (profile?.is_verified === true) {
             toast.success('Your account has been approved!')
 
-            // Use hard redirect instead of router.push
             setTimeout(() => {
                 if (profile.role === 'superadmin') {
                     window.location.href = '/admin/dashboard'
@@ -48,7 +52,7 @@ export default function PendingApprovalPage() {
                 }
             }, 500)
         } else {
-            toast.info('Your account is still pending approval')
+            toast.info('Email verified! Waiting for admin approval.')
         }
     }
 
@@ -63,42 +67,39 @@ export default function PendingApprovalPage() {
                     </div>
                     <div>
                         <CardTitle className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                            Pending Approval
+                            Account Status
                         </CardTitle>
                         <CardDescription className="text-muted-foreground mt-2">
-                            Your account is awaiting admin approval
+                            Complete the steps below to access your dashboard
                         </CardDescription>
                     </div>
                 </CardHeader>
 
                 <CardContent className="space-y-6">
                     <div className="bg-accent/50 rounded-lg p-4 space-y-4">
+
+                        {/* Step 1: Email Verification */}
                         <div className="flex items-start gap-3">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                            <div className="mt-0.5">
+                                {/* We can't easily access user state here without Context, 
+                                    but the user will know by clicking 'Check Status' */}
+                                <CheckCircle2 className="w-5 h-5 text-muted-foreground" />
+                            </div>
                             <div>
-                                <p className="text-sm font-medium text-foreground">Registration Complete</p>
+                                <p className="text-sm font-medium text-foreground">1. Verify Email</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Your account has been created successfully
+                                    Check your inbox and click the verification link.
                                 </p>
                             </div>
                         </div>
 
+                        {/* Step 2: Admin Approval */}
                         <div className="flex items-start gap-3">
                             <Shield className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                             <div>
-                                <p className="text-sm font-medium text-foreground">Admin Review</p>
+                                <p className="text-sm font-medium text-foreground">2. Admin Approval</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    An administrator will review and approve your account
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                            <Clock className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="text-sm font-medium text-foreground">Waiting for Approval</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Once approved, you can start creating campaigns
+                                    An administrator will review and approve your account.
                                 </p>
                             </div>
                         </div>
@@ -117,7 +118,7 @@ export default function PendingApprovalPage() {
                         onClick={checkStatus}
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
                     >
-                        Check Approval Status
+                        Check Status
                     </Button>
 
                     <Button

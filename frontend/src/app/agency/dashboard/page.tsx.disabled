@@ -1,0 +1,215 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/auth-context'
+import { createClient } from '@/lib/supabase/client'
+import { Loader2, Building2, Users, MessageSquare, DollarSign, ArrowRight } from 'lucide-react'
+import { RestaurantSwitcher } from '@/components/agency/restaurant-switcher'
+import { toast } from 'sonner'
+
+interface AgencyStats {
+    totalRestaurants: number
+    totalMessages: number
+    totalSpend: number
+}
+
+interface RestaurantSummary {
+    id: string
+    name: string
+    status: string
+    monthly_limit: number
+    usage: {
+        total_cost: number
+        messages_sent: number
+    }
+}
+
+export default function AgencyDashboard() {
+    const { profile, isLoading: authLoading, setSelectedRestaurantId } = useAuth()
+    const router = useRouter()
+    const supabase = createClient()
+
+    const [stats, setStats] = useState<AgencyStats>({ totalRestaurants: 0, totalMessages: 0, totalSpend: 0 })
+    const [restaurants, setRestaurants] = useState<RestaurantSummary[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        if (!authLoading && profile?.role !== 'agency_admin') {
+            router.push('/login') // Or unauthorized page
+        }
+    }, [authLoading, profile, router])
+
+    useEffect(() => {
+        async function fetchData() {
+            if (profile?.role !== 'agency_admin') return
+
+            try {
+                // 1. Fetch Restaurants
+                const { data: restaurantData, error: restError } = await supabase
+                    .from('restaurants')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+
+                if (restError) throw restError
+
+                // 2. Fetch Usage for current month (simplified for overview)
+                // In a real app we might join or loop. For small scale loop is fine.
+                const summaries: RestaurantSummary[] = []
+                let totalMessages = 0
+                let totalSpend = 0
+
+                // Get current month start
+                const date = new Date()
+                const periodStart = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-01`
+
+                for (const r of restaurantData || []) {
+                    const { data: usage } = await supabase
+                        .from('usage_records')
+                        .select('total_cost, messages_sent')
+                        .eq('restaurant_id', r.id)
+                        .eq('period_start', periodStart)
+                        .maybeSingle()
+
+                    const cost = usage?.total_cost || 0
+                    const sent = usage?.messages_sent || 0
+
+                    totalMessages += sent
+                    totalSpend += cost
+
+                    summaries.push({
+                        id: r.id,
+                        name: r.name,
+                        status: r.status,
+                        monthly_limit: r.monthly_sms_limit,
+                        usage: {
+                            total_cost: cost,
+                            messages_sent: sent
+                        }
+                    })
+                }
+
+                setRestaurants(summaries)
+                setStats({
+                    totalRestaurants: restaurantData?.length || 0,
+                    totalMessages,
+                    totalSpend
+                })
+
+            } catch (error) {
+                console.error('Error fetching agency data:', error)
+                toast.error('Failed to load dashboard data')
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        if (profile) fetchData()
+    }, [profile, supabase])
+
+    if (authLoading || loading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="p-8 space-y-8">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Agency Dashboard</h1>
+                    <p className="text-muted-foreground mt-2">Manage your restaurant subaccounts</p>
+                </div>
+                <div>
+                    {/* Switcher is also available globally, but we can put verify button here or settings */}
+                    <Button>Agency Settings</Button>
+                </div>
+            </div>
+
+            {/* Stats Overview */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Restaurants</CardTitle>
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.totalRestaurants}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total SMS Sent (Month)</CardTitle>
+                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.totalMessages.toLocaleString()}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Spend (Month)</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">${stats.totalSpend.toFixed(2)}</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Restaurant List */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Restaurants</CardTitle>
+                    <CardDescription>
+                        Overview of all your managed accounts.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {restaurants.length === 0 ? (
+                            <p className="text-center py-8 text-muted-foreground">No restaurants found.</p>
+                        ) : (
+                            restaurants.map((restaurant) => (
+                                <div
+                                    key={restaurant.id}
+                                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                                >
+                                    <div className="space-y-1">
+                                        <p className="font-medium">{restaurant.name}</p>
+                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                            <span className="flex items-center gap-1">
+                                                <div className={`w-2 h-2 rounded-full ${restaurant.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                                {restaurant.status}
+                                            </span>
+                                            <span>
+                                                ${restaurant.usage.total_cost.toFixed(2)} / ${restaurant.monthly_limit} limit
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        variant="ghost"
+                                        className="gap-2"
+                                        onClick={() => {
+                                            setSelectedRestaurantId(restaurant.id)
+                                            router.push('/restaurant/dashboard')
+                                            toast.success(`Accessing ${restaurant.name}`)
+                                        }}
+                                    >
+                                        Manage
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}

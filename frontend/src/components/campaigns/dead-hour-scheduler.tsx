@@ -20,6 +20,7 @@ interface DeadHourSchedulerProps {
 }
 
 const timezones = [
+    { value: 'GMT', label: 'Greenwich Mean Time (GMT)' },
     { value: 'America/New_York', label: 'Eastern Time (ET)' },
     { value: 'America/Chicago', label: 'Central Time (CT)' },
     { value: 'America/Denver', label: 'Mountain Time (MT)' },

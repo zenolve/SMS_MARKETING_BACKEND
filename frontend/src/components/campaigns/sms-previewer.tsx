@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { calculateSegments } from '@/lib/sms-utils'
 
 interface SMSPreviewerProps {
     message: string
@@ -9,9 +10,11 @@ interface SMSPreviewerProps {
 }
 
 export function SMSPreviewer({ message, senderName = 'Restaurant', className }: SMSPreviewerProps) {
-    const characterCount = message.length
-    const segmentCount = Math.ceil(characterCount / 160) || 1
-    const remainingChars = segmentCount * 160 - characterCount
+    const { segments, charCount, encoding, perSegmentLimit } = calculateSegments(message)
+    const remainingChars = (segments * perSegmentLimit) - charCount
+
+    // Estimate cost based on standard rate (can be passed in props if dynamic)
+    const costPerMessage = segments * 0.0079
 
     return (
         <div className={cn('flex flex-col items-center', className)}>
@@ -83,10 +86,10 @@ export function SMSPreviewer({ message, senderName = 'Restaurant', className }: 
                         <span className="text-muted-foreground">Characters:</span>
                         <span className={cn(
                             'font-mono font-medium',
-                            characterCount > 1600 ? 'text-destructive' :
-                                characterCount > 1000 ? 'text-amber-500' : 'text-emerald-500'
+                            charCount > 1600 ? 'text-destructive' :
+                                charCount > 1000 ? 'text-amber-500' : 'text-emerald-500'
                         )}>
-                            {characterCount}
+                            {charCount}
                         </span>
                     </div>
                     <div className="w-px h-4 bg-border" />
@@ -94,15 +97,20 @@ export function SMSPreviewer({ message, senderName = 'Restaurant', className }: 
                         <span className="text-muted-foreground">Segments:</span>
                         <span className={cn(
                             'font-mono font-medium',
-                            segmentCount > 10 ? 'text-amber-500' : 'text-primary'
+                            segments > 10 ? 'text-amber-500' : 'text-primary'
                         )}>
-                            {segmentCount}
+                            {segments}
                         </span>
                     </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                    {remainingChars} characters until next segment • ~${(segmentCount * 0.0079).toFixed(3)} est. per message
-                </p>
+                <div className="flex flex-col gap-1 mt-2">
+                    <p className="text-xs text-muted-foreground">
+                        {remainingChars} chars until next segment • {encoding} encoding
+                    </p>
+                    <p className="text-xs font-medium text-foreground">
+                        ~${costPerMessage.toFixed(4)} est. per message
+                    </p>
+                </div>
             </div>
         </div>
     )

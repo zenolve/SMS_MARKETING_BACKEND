@@ -278,23 +278,27 @@ CREATE POLICY "Superadmin can delete profiles" ON public.user_profiles
 -- -----------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Users can view own restaurant" ON public.restaurants;
 DROP POLICY IF EXISTS "Superadmin can view all restaurants" ON public.restaurants;
+DROP POLICY IF EXISTS "Admin/Agency can view all restaurants" ON public.restaurants;
 DROP POLICY IF EXISTS "Users can insert restaurants" ON public.restaurants;
 DROP POLICY IF EXISTS "Users can update own restaurant" ON public.restaurants;
 
 CREATE POLICY "Users can view own restaurant" ON public.restaurants
     FOR SELECT USING (
+        id = (auth.jwt() -> 'app_metadata' ->> 'restaurant_id')::uuid
+        OR
+        (auth.jwt() -> 'app_metadata' ->> 'role') IN ('superadmin', 'agency_admin')
+        OR
         id IN (SELECT restaurant_id FROM public.user_profiles WHERE id = auth.uid())
     );
-
-CREATE POLICY "Superadmin can view all restaurants" ON public.restaurants
-    FOR SELECT USING (public.is_superadmin());
 
 CREATE POLICY "Users can insert restaurants" ON public.restaurants
     FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Users can update own restaurant" ON public.restaurants
     FOR UPDATE USING (
-        id IN (SELECT restaurant_id FROM public.user_profiles WHERE id = auth.uid())
+        id = (auth.jwt() -> 'app_metadata' ->> 'restaurant_id')::uuid
+        OR
+        (auth.jwt() -> 'app_metadata' ->> 'role') IN ('superadmin', 'agency_admin')
     );
 
 -- -----------------------------------------------------------------------------
@@ -304,7 +308,9 @@ DROP POLICY IF EXISTS "Users can manage own customers" ON public.customers;
 
 CREATE POLICY "Users can manage own customers" ON public.customers
     FOR ALL USING (
-        restaurant_id IN (SELECT restaurant_id FROM public.user_profiles WHERE id = auth.uid())
+        restaurant_id = (auth.jwt() -> 'app_metadata' ->> 'restaurant_id')::uuid
+        OR
+        (auth.jwt() -> 'app_metadata' ->> 'role') IN ('superadmin', 'agency_admin')
     );
 
 -- -----------------------------------------------------------------------------
@@ -314,7 +320,9 @@ DROP POLICY IF EXISTS "Users can manage own campaigns" ON public.campaigns;
 
 CREATE POLICY "Users can manage own campaigns" ON public.campaigns
     FOR ALL USING (
-        restaurant_id IN (SELECT restaurant_id FROM public.user_profiles WHERE id = auth.uid())
+        restaurant_id = (auth.jwt() -> 'app_metadata' ->> 'restaurant_id')::uuid
+        OR
+        (auth.jwt() -> 'app_metadata' ->> 'role') IN ('superadmin', 'agency_admin')
     );
 
 -- -----------------------------------------------------------------------------
@@ -324,7 +332,9 @@ DROP POLICY IF EXISTS "Users can view own messages" ON public.sms_messages;
 
 CREATE POLICY "Users can view own messages" ON public.sms_messages
     FOR ALL USING (
-        restaurant_id IN (SELECT restaurant_id FROM public.user_profiles WHERE id = auth.uid())
+        restaurant_id = (auth.jwt() -> 'app_metadata' ->> 'restaurant_id')::uuid
+        OR
+        (auth.jwt() -> 'app_metadata' ->> 'role') IN ('superadmin', 'agency_admin')
     );
 
 -- -----------------------------------------------------------------------------
@@ -334,7 +344,9 @@ DROP POLICY IF EXISTS "Users can view own usage" ON public.usage_records;
 
 CREATE POLICY "Users can view own usage" ON public.usage_records
     FOR SELECT USING (
-        restaurant_id IN (SELECT restaurant_id FROM public.user_profiles WHERE id = auth.uid())
+        restaurant_id = (auth.jwt() -> 'app_metadata' ->> 'restaurant_id')::uuid
+        OR
+        (auth.jwt() -> 'app_metadata' ->> 'role') IN ('superadmin', 'agency_admin')
     );
 
 -- -----------------------------------------------------------------------------
@@ -357,13 +369,18 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
     new_restaurant_id UUID;
+    user_role TEXT;
+    user_business_name TEXT;
 BEGIN
+    user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'restaurant_admin');
+    user_business_name := COALESCE(NEW.raw_user_meta_data->>'business_name', NEW.raw_user_meta_data->>'businessName', 'My Restaurant');
+
     -- For restaurant_admin role, create a restaurant automatically
-    IF COALESCE(NEW.raw_user_meta_data->>'role', 'restaurant_admin') = 'restaurant_admin' THEN
+    IF user_role = 'restaurant_admin' THEN
         -- Create the restaurant first
         INSERT INTO restaurants (name, email, agency_id, status)
         VALUES (
-            COALESCE(NEW.raw_user_meta_data->>'business_name', NEW.raw_user_meta_data->>'businessName', 'My Restaurant'),
+            user_business_name,
             NEW.email,
             '00000000-0000-0000-0000-000000000001', -- Default agency ID
             'pending'
@@ -375,20 +392,39 @@ BEGIN
         VALUES (
             NEW.id,
             'restaurant_admin',
-            FALSE,
-            COALESCE(NEW.raw_user_meta_data->>'business_name', NEW.raw_user_meta_data->>'businessName'),
+            FALSE, -- Admin approval required
+            user_business_name,
             new_restaurant_id
         );
+
+        -- KEY CHANGE: Update auth.users metadata with restaurant_id for JWT claims
+        -- This allows RLS policies to use (auth.jwt() -> 'app_metadata' ->> 'restaurant_id')
+        UPDATE auth.users
+        SET raw_app_meta_data = 
+            COALESCE(raw_app_meta_data, '{}'::jsonb) || 
+            jsonb_build_object(
+                'restaurant_id', new_restaurant_id, 
+                'role', 'restaurant_admin'
+            )
+        WHERE id = NEW.id;
+
     ELSE
-        -- For other roles (agency_admin, superadmin), no restaurant needed
+        -- For other roles (agency_admin, superadmin), no restaurant needed immediately
         INSERT INTO public.user_profiles (id, role, is_verified, business_name, restaurant_id)
         VALUES (
             NEW.id,
-            COALESCE(NEW.raw_user_meta_data->>'role', 'restaurant_admin'),
+            user_role,
             FALSE,
-            COALESCE(NEW.raw_user_meta_data->>'business_name', NEW.raw_user_meta_data->>'businessName'),
+            user_business_name,
             NULL
         );
+
+        -- Update auth.users metadata for role only
+        UPDATE auth.users
+        SET raw_app_meta_data = 
+            COALESCE(raw_app_meta_data, '{}'::jsonb) || 
+            jsonb_build_object('role', user_role)
+        WHERE id = NEW.id;
     END IF;
     
     RETURN NEW;

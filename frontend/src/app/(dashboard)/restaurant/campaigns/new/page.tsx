@@ -17,6 +17,7 @@ import { DeadHourScheduler } from '@/components/campaigns/dead-hour-scheduler'
 import { SchedulerHeatmap } from '@/components/campaigns/scheduler-heatmap'
 import { campaignSchema, type CampaignInput } from '@/lib/validations'
 import { cn } from '@/lib/utils'
+import { calculateSegments } from '@/lib/sms-utils'
 import { useAuth } from '@/contexts/auth-context'
 import { useCreateCampaign, useSendCampaign, useCampaigns, useCustomers } from '@/lib/queries'
 import {
@@ -52,7 +53,7 @@ export default function NewCampaignPage() {
     const [selectedSegment, setSelectedSegment] = useState('all')
     const [scheduleDate, setScheduleDate] = useState<Date>()
     const [scheduleTime, setScheduleTime] = useState('')
-    const [timezone, setTimezone] = useState('America/New_York')
+    const [timezone, setTimezone] = useState('GMT')
     const [scheduleType, setScheduleType] = useState<'now' | 'scheduled'>('scheduled')
 
     // API hooks
@@ -140,6 +141,18 @@ export default function NewCampaignPage() {
                 const [hours, minutes] = scheduleTime.split(':').map(Number)
                 const scheduledDate = new Date(scheduleDate)
                 scheduledDate.setHours(hours, minutes, 0, 0)
+
+                // LEAD TIME VALIDATION (15 Minutes)
+                const now = new Date()
+                const minLeadTime = new Date(now.getTime() + 15 * 60 * 1000)
+
+                if (scheduledDate < minLeadTime) {
+                    toast.error('Schedule Error', {
+                        description: 'Campaigns must be scheduled at least 15 minutes in the future.'
+                    })
+                    return
+                }
+
                 scheduled_at = scheduledDate.toISOString()
             }
 
@@ -400,10 +413,10 @@ export default function NewCampaignPage() {
                                     <div className="p-4 rounded-lg bg-accent/50 border border-border">
                                         <p className="text-xs text-muted-foreground uppercase mb-1">Estimated Cost</p>
                                         <p className="text-2xl font-bold text-foreground">
-                                            ${((selectedSegmentData?.count || 0) * 0.0079 * Math.ceil((message.length || 1) / 160)).toFixed(2)}
+                                            ${((selectedSegmentData?.count || 0) * (calculateSegments(message).segments * 0.0079)).toFixed(2)}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            Based on {Math.ceil((message.length || 1) / 160)} segment(s) per message
+                                            Based on {calculateSegments(message).segments} segment(s) per message ({calculateSegments(message).encoding})
                                         </p>
                                     </div>
                                 </div>

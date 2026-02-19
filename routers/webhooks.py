@@ -3,6 +3,7 @@ from supabase import Client
 from datetime import datetime
 
 from database import get_db
+from services.usage_service import increment_usage
 
 router = APIRouter()
 
@@ -51,14 +52,19 @@ async def twilio_status_callback(
         message = result.data[0]
         campaign_id = message.get("campaign_id")
         
+
         if campaign_id:
             # Increment counters based on status
             if status == "sent":
                 db.rpc("increment_campaign_sent", {"campaign_id": campaign_id}).execute()
+                # Track usage
+                increment_usage(db, message.get("restaurant_id"), "sent", cost=float(price or 0))
             elif status == "delivered":
                 db.rpc("increment_campaign_delivered", {"campaign_id": campaign_id}).execute()
+                increment_usage(db, message.get("restaurant_id"), "delivered")
             elif status in ["failed", "undelivered"]:
                 db.rpc("increment_campaign_failed", {"campaign_id": campaign_id}).execute()
+                increment_usage(db, message.get("restaurant_id"), "failed")
     
     return {"status": "received"}
 

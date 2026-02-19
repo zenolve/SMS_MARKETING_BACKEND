@@ -1,64 +1,121 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Phone, Search, Loader2, Check, MapPin, DollarSign } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Phone, Search, Loader2, Check, MapPin, DollarSign, Store } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-
-// Mock available phone numbers
-const mockPhoneNumbers = [
-    { number: '+12025551001', locality: 'Washington, DC', monthly_cost: 1.15 },
-    { number: '+12025551002', locality: 'Washington, DC', monthly_cost: 1.15 },
-    { number: '+13105551001', locality: 'Los Angeles, CA', monthly_cost: 1.00 },
-    { number: '+13105551002', locality: 'Los Angeles, CA', monthly_cost: 1.00 },
-    { number: '+12125551001', locality: 'New York, NY', monthly_cost: 1.25 },
-    { number: '+12125551002', locality: 'New York, NY', monthly_cost: 1.25 },
-]
+import { twilioApi, restaurantApi } from '@/lib/api'
 
 interface TwilioNumberPickerProps {
     onSelect?: (number: string) => void
 }
 
+interface AvailableNumber {
+    phone_number: string
+    friendly_name: string
+    locality: string
+    region: string
+    iso_country: string
+    monthly_cost: number
+}
+
+interface Restaurant {
+    id: string
+    name: string
+}
+
 export function TwilioNumberPicker({ onSelect }: TwilioNumberPickerProps) {
     const [areaCode, setAreaCode] = useState('')
     const [isSearching, setIsSearching] = useState(false)
-    const [numbers, setNumbers] = useState<typeof mockPhoneNumbers>([])
+    const [numbers, setNumbers] = useState<AvailableNumber[]>([])
     const [selectedNumber, setSelectedNumber] = useState<string | null>(null)
+
+    // Purchase flow
     const [isPurchasing, setIsPurchasing] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
 
+    // Restaurant selection
+    const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+    const [selectedRestaurantId, setSelectedRestaurantId] = useState<string>('')
+    const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false)
+
+    useEffect(() => {
+        loadRestaurants()
+    }, [])
+
+    async function loadRestaurants() {
+        setIsLoadingRestaurants(true)
+        try {
+            const { data } = await restaurantApi.list()
+            setRestaurants(data || [])
+        } catch (error) {
+            console.error('Error loading restaurants:', error)
+            toast.error('Failed to load restaurants')
+        } finally {
+            setIsLoadingRestaurants(false)
+        }
+    }
+
     async function handleSearch() {
         if (!areaCode || areaCode.length < 3) {
-            toast.error('Please enter a valid area code')
+            toast.error('Please enter a valid 3-digit area code')
             return
         }
 
         setIsSearching(true)
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-        setNumbers(mockPhoneNumbers)
-        setIsSearching(false)
+        setNumbers([])
+        try {
+            const { data } = await twilioApi.search(areaCode)
+            setNumbers(data)
+            if (data.length === 0) {
+                toast.info('No numbers found for this area code')
+            }
+        } catch (error) {
+            console.error('Error searching numbers:', error)
+            toast.error('Failed to search phone numbers')
+        } finally {
+            setIsSearching(false)
+        }
     }
 
     async function handlePurchase() {
         if (!selectedNumber) return
+        if (!selectedRestaurantId) {
+            toast.error('Please select a restaurant to assign this number to')
+            return
+        }
 
         setIsPurchasing(true)
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 2000))
+        try {
+            await twilioApi.buy({
+                phone_number: selectedNumber,
+                restaurant_id: selectedRestaurantId
+            })
 
-        toast.success('Phone number purchased successfully!')
-        setShowConfirm(false)
-        setIsPurchasing(false)
-        onSelect?.(selectedNumber)
+            toast.success('Phone number purchased and assigned successfully!')
+            setShowConfirm(false)
+            onSelect?.(selectedNumber)
+
+            // Clear search results to prevent double purchase
+            setNumbers([])
+            setSelectedNumber(null)
+
+        } catch (error) {
+            console.error('Error purchasing number:', error)
+            toast.error('Failed to purchase phone number. It may be unavailable.')
+        } finally {
+            setIsPurchasing(false)
+        }
     }
 
-    const selectedNumberData = numbers.find((n) => n.number === selectedNumber)
+    const selectedNumberData = numbers.find((n) => n.phone_number === selectedNumber)
 
     return (
         <div className="space-y-6">
@@ -82,6 +139,7 @@ export function TwilioNumberPicker({ onSelect }: TwilioNumberPickerProps) {
                                 value={areaCode}
                                 onChange={(e) => setAreaCode(e.target.value.replace(/\D/g, '').slice(0, 3))}
                                 className="pl-9 bg-background border-border text-foreground placeholder:text-muted-foreground/50"
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             />
                         </div>
                         <Button
@@ -115,9 +173,9 @@ export function TwilioNumberPicker({ onSelect }: TwilioNumberPickerProps) {
                         <div className="grid gap-3">
                             {numbers.map((phone) => (
                                 <button
-                                    key={phone.number}
+                                    key={phone.phone_number}
                                     onClick={() => {
-                                        setSelectedNumber(phone.number)
+                                        setSelectedNumber(phone.phone_number)
                                         setShowConfirm(true)
                                     }}
                                     className={cn(
@@ -130,10 +188,10 @@ export function TwilioNumberPicker({ onSelect }: TwilioNumberPickerProps) {
                                             <Phone className="w-6 h-6 text-emerald-400" />
                                         </div>
                                         <div>
-                                            <p className="font-mono font-medium text-foreground text-lg">{phone.number}</p>
+                                            <p className="font-mono font-medium text-foreground text-lg">{phone.phone_number}</p>
                                             <p className="text-sm text-muted-foreground flex items-center gap-1">
                                                 <MapPin className="h-3 w-3" />
-                                                {phone.locality}
+                                                {phone.locality}, {phone.region}
                                             </p>
                                         </div>
                                     </div>
@@ -150,33 +208,57 @@ export function TwilioNumberPicker({ onSelect }: TwilioNumberPickerProps) {
 
             {/* Confirm Dialog */}
             <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-                <DialogContent className="bg-card border-border">
+                <DialogContent className="bg-card border-border sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle className="text-foreground">Confirm Purchase</DialogTitle>
                         <DialogDescription className="text-muted-foreground">
-                            You are about to purchase this phone number
+                            Assign this number to a restaurant
                         </DialogDescription>
                     </DialogHeader>
 
                     {selectedNumberData && (
-                        <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                                    <Phone className="w-6 h-6 text-emerald-500" />
+                        <div className="space-y-4">
+                            {/* Number Details */}
+                            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                        <Phone className="w-6 h-6 text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <p className="font-mono font-medium text-foreground text-lg">{selectedNumberData.phone_number}</p>
+                                        <p className="text-sm text-muted-foreground">{selectedNumberData.locality}, {selectedNumberData.region}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-mono font-medium text-foreground text-lg">{selectedNumberData.number}</p>
-                                    <p className="text-sm text-muted-foreground">{selectedNumberData.locality}</p>
+                                <div className="mt-4 pt-4 border-t border-border flex justify-between">
+                                    <span className="text-muted-foreground">Monthly cost</span>
+                                    <span className="text-foreground font-medium">${selectedNumberData.monthly_cost.toFixed(2)}/month</span>
                                 </div>
                             </div>
-                            <div className="mt-4 pt-4 border-t border-border flex justify-between">
-                                <span className="text-muted-foreground">Monthly cost</span>
-                                <span className="text-foreground font-medium">${selectedNumberData.monthly_cost.toFixed(2)}/month</span>
+
+                            {/* Restaurant Selection */}
+                            <div className="space-y-2">
+                                <Label className="text-foreground">Assign to Restaurant</Label>
+                                <Select value={selectedRestaurantId} onValueChange={setSelectedRestaurantId}>
+                                    <SelectTrigger className="bg-background border-border text-foreground">
+                                        <SelectValue placeholder="Select a restaurant" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-card border-border text-foreground">
+                                        {restaurants.map((r) => (
+                                            <SelectItem key={r.id} value={r.id} className="focus:bg-accent focus:text-foreground">
+                                                {r.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">
+                                    <Store className="inline h-3 w-3 mr-1" />
+                                    The number will be used for this restaurant's campaigns.
+                                </p>
                             </div>
                         </div>
                     )}
 
-                    <DialogFooter>
+                    <DialogFooter className="mt-4">
                         <Button
                             variant="ghost"
                             onClick={() => setShowConfirm(false)}
@@ -186,7 +268,7 @@ export function TwilioNumberPicker({ onSelect }: TwilioNumberPickerProps) {
                         </Button>
                         <Button
                             onClick={handlePurchase}
-                            disabled={isPurchasing}
+                            disabled={isPurchasing || !selectedRestaurantId}
                             className="bg-emerald-600 hover:bg-emerald-700"
                         >
                             {isPurchasing ? (
@@ -197,7 +279,7 @@ export function TwilioNumberPicker({ onSelect }: TwilioNumberPickerProps) {
                             ) : (
                                 <>
                                     <Check className="mr-2 h-4 w-4" />
-                                    Purchase Number
+                                    Buy & Assign
                                 </>
                             )}
                         </Button>

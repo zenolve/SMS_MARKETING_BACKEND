@@ -1,0 +1,117 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\malik\OneDrive\Desktop\sms
+plugins: anyio-4.12.1, asyncio-1.3.0, respx-0.22.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3 items
+
+tests\test_campaign_service.py F..                                       [100%]
+
+================================== FAILURES ===================================
+_____________________________ test_send_now_logic _____________________________
+
+mock_db = <MagicMock id='2335325953808'>
+mock_twilio = {'immediate': <MagicMock name='send_immediate_message' id='2335364392496'>, 'phone': <MagicMock name='send_message_with_phone' id='2335364396288'>, 'scheduled': <MagicMock name='send_scheduled_message' id='2335363647776'>}
+
+    @pytest.mark.asyncio
+    async def test_send_now_logic(mock_db, mock_twilio):
+        # Setup mock data for immediate send
+        mock_db.table().select().eq().execute.side_effect = [
+            MagicMock(data=[{"id": "camp123", "restaurant_id": "rest1", "status": "draft", "message_template": "Hello", "scheduled_at": None}]),
+            MagicMock(data=[{"id": "rest1", "twilio_phone_number": "+1234567890"}]),
+        ]
+    
+        with patch("services.campaign_service.get_db", return_value=mock_db), \
+             patch("services.campaign_service.get_campaign_recipients", return_value=[{"id": "c1", "phone": "+987654321"}]), \
+             patch("services.campaign_service.check_monthly_limit", return_value=True), \
+             patch("services.campaign_service.increment_usage"):
+    
+            await send_campaign("camp123")
+    
+            # Verify immediate send was called
+>           mock_twilio["phone"].assert_called_once()
+
+tests\test_campaign_service.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock name='send_message_with_phone' id='2335364396288'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'send_message_with_phone' to have been called once. Called 0 times.
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\unittest\mock.py:928: AssertionError
+============================== warnings summary ===============================
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:72
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:72: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85: PyparsingDeprecationWarning: 'escChar' argument is deprecated, use 'esc_char'
+    quoted_identifier = QuotedString('"', escChar="\\", unquoteResults=True)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85: PyparsingDeprecationWarning: 'unquoteResults' argument is deprecated, use 'unquote_results'
+    quoted_identifier = QuotedString('"', escChar="\\", unquoteResults=True)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:365
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:365: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:494
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:494: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:498
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:498: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:502
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:502: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:506
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:506: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:538
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:538: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:542
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:542: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:546
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:546: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:550
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:550: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+config.py:5
+  C:\Users\malik\OneDrive\Desktop\sms\config.py:5: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+tests/test_campaign_service.py::test_send_now_logic
+tests/test_campaign_service.py::test_scheduled_logic_fallback
+  C:\Users\malik\OneDrive\Desktop\sms\services\campaign_service.py:205: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "sent_at": datetime.utcnow().isoformat() if not use_scheduling else None
+
+tests/test_campaign_service.py::test_send_now_logic
+tests/test_campaign_service.py::test_scheduled_logic_fallback
+  C:\Users\malik\OneDrive\Desktop\sms\services\campaign_service.py:230: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "sent_at": datetime.utcnow().isoformat() if not use_scheduling else None,
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_campaign_service.py::test_send_now_logic - AssertionError: ...
+================== 1 failed, 2 passed, 17 warnings in 2.20s ===================

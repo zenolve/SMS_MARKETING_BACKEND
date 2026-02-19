@@ -1,0 +1,2 @@
+[2026-02-19T22:04:39.401348+00:00] Trigger Started: Email: test_trigger_debug_6374@example.com, Role: restaurant_admin
+[2026-02-19T22:04:39.401348+00:00] Trigger Success: User ID: ceedfa06-7f94-406a-8102-d4c2b8494e55

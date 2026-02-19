@@ -1,0 +1,481 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\malik\OneDrive\Desktop\sms
+plugins: anyio-4.12.1, asyncio-1.3.0, respx-0.22.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3 items
+
+tests\test_campaign_router.py FFF                                        [100%]
+
+================================== FAILURES ===================================
+________________________ test_create_campaign_endpoint ________________________
+
+mock_db = <MagicMock id='2001004045392'>
+
+    def test_create_campaign_endpoint(mock_db):
+        payload = {
+            "restaurant_id": str(uuid.uuid4()),
+            "name": "Test Campaign",
+            "message_template": "Hello {first_name}",
+            "schedule_type": "one_time"
+        }
+    
+        mock_db.table().insert().execute.return_value = MagicMock(data=[{"id": str(uuid.uuid4()), **payload, "status": "draft"}])
+    
+>       response = client.post("/campaigns", json=payload)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_campaign_router.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:546: in post
+    return super().post(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1144: in post
+    return self.request(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:445: in request
+    return super().request(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:914: in send
+    response = self._send_handling_auth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:348: in handle_request
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py:334: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py:259: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\applications.py:1135: in __call__
+    await super().__call__(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\applications.py:107: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\cors.py:85: in __call__
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:716: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:736: in app
+    await route.handle(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:290: in handle
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:115: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:101: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:377: in app
+    content = await serialize_response(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    async def serialize_response(
+        *,
+        field: Optional[ModelField] = None,
+        response_content: Any,
+        include: Optional[IncEx] = None,
+        exclude: Optional[IncEx] = None,
+        by_alias: bool = True,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        is_coroutine: bool = True,
+        endpoint_ctx: Optional[EndpointContext] = None,
+    ) -> Any:
+        if field:
+            errors = []
+            if is_coroutine:
+                value, errors_ = field.validate(response_content, {}, loc=("response",))
+            else:
+                value, errors_ = await run_in_threadpool(
+                    field.validate, response_content, {}, loc=("response",)
+                )
+            if isinstance(errors_, list):
+                errors.extend(errors_)
+            if errors:
+                ctx = endpoint_ctx or EndpointContext()
+>               raise ResponseValidationError(
+                    errors=errors,
+                    body=response_content,
+                    endpoint_ctx=ctx,
+                )
+E               fastapi.exceptions.ResponseValidationError: 7 validation errors:
+E                 {'type': 'missing', 'loc': ('response', 'total_recipients'), 'msg': 'Field required', 'input': {'id': '611f9d4d-a6ae-4369-871b-ce42a929b1eb', 'restaurant_id': 'd7a881a1-9d8f-4b20-924e-74084a96eabe', 'name': 'Test Campaign', 'message_template': 'Hello {first_name}', 'schedule_type': 'one_time', 'status': 'draft'}}
+E                 {'type': 'missing', 'loc': ('response', 'total_sent'), 'msg': 'Field required', 'input': {'id': '611f9d4d-a6ae-4369-871b-ce42a929b1eb', 'restaurant_id': 'd7a881a1-9d8f-4b20-924e-74084a96eabe', 'name': 'Test Campaign', 'message_template': 'Hello {first_name}', 'schedule_type': 'one_time', 'status': 'draft'}}
+E                 {'type': 'missing', 'loc': ('response', 'total_delivered'), 'msg': 'Field required', 'input': {'id': '611f9d4d-a6ae-4369-871b-ce42a929b1eb', 'restaurant_id': 'd7a881a1-9d8f-4b20-924e-74084a96eabe', 'name': 'Test Campaign', 'message_template': 'Hello {first_name}', 'schedule_type': 'one_time', 'status': 'draft'}}
+E                 {'type': 'missing', 'loc': ('response', 'total_failed'), 'msg': 'Field required', 'input': {'id': '611f9d4d-a6ae-4369-871b-ce42a929b1eb', 'restaurant_id': 'd7a881a1-9d8f-4b20-924e-74084a96eabe', 'name': 'Test Campaign', 'message_template': 'Hello {first_name}', 'schedule_type': 'one_time', 'status': 'draft'}}
+E                 {'type': 'missing', 'loc': ('response', 'total_cost'), 'msg': 'Field required', 'input': {'id': '611f9d4d-a6ae-4369-871b-ce42a929b1eb', 'restaurant_id': 'd7a881a1-9d8f-4b20-924e-74084a96eabe', 'name': 'Test Campaign', 'message_template': 'Hello {first_name}', 'schedule_type': 'one_time', 'status': 'draft'}}
+E                 {'type': 'missing', 'loc': ('response', 'created_at'), 'msg': 'Field required', 'input': {'id': '611f9d4d-a6ae-4369-871b-ce42a929b1eb', 'restaurant_id': 'd7a881a1-9d8f-4b20-924e-74084a96eabe', 'name': 'Test Campaign', 'message_template': 'Hello {first_name}', 'schedule_type': 'one_time', 'status': 'draft'}}
+E                 {'type': 'missing', 'loc': ('response', 'updated_at'), 'msg': 'Field required', 'input': {'id': '611f9d4d-a6ae-4369-871b-ce42a929b1eb', 'restaurant_id': 'd7a881a1-9d8f-4b20-924e-74084a96eabe', 'name': 'Test Campaign', 'message_template': 'Hello {first_name}', 'schedule_type': 'one_time', 'status': 'draft'}}
+E               
+E                 File "C:\Users\malik\OneDrive\Desktop\sms\routers\campaigns.py", line 28, in create_campaign
+E                   POST /campaigns
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:215: ResponseValidationError
+______________________ test_schedule_validation_failure _______________________
+
+mock_db = <MagicMock id='2001003453360'>
+
+    def test_schedule_validation_failure(mock_db):
+        # Try to update a campaign with a scheduled_at too close to now
+        soon_time = datetime.now(timezone.utc) + timedelta(minutes=5)
+        campaign_id = str(uuid.uuid4())
+    
+        mock_db.table().select().eq().execute.return_value = MagicMock(data=[{"status": "draft"}])
+    
+        payload = {
+            "scheduled_at": soon_time.isoformat()
+        }
+    
+>       response = client.patch(f"/campaigns/{campaign_id}", json=payload)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_campaign_router.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:608: in patch
+    return super().patch(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1218: in patch
+    return self.request(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:445: in request
+    return super().request(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:914: in send
+    response = self._send_handling_auth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:348: in handle_request
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py:334: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py:259: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\applications.py:1135: in __call__
+    await super().__call__(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\applications.py:107: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\cors.py:85: in __call__
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:716: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:736: in app
+    await route.handle(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:290: in handle
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:115: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:101: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:355: in app
+    raw_response = await run_endpoint_function(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:243: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+campaign_id = UUID('80b5b2a2-a3be-4415-b87c-ce0a09dd8497')
+campaign = CampaignUpdate(name=None, message_template=None, segment_criteria=None, schedule_type=None, scheduled_at=datetime.datetime(2026, 2, 14, 20, 51, 44, 770995, tzinfo=TzInfo(0)), recurrence_rule=None, timezone=None, status=None)
+db = <MagicMock id='2001003453360'>
+
+    @router.patch("/{campaign_id}", response_model=Campaign)
+    async def update_campaign(
+        campaign_id: UUID,
+        campaign: CampaignUpdate,
+        db: Client = Depends(get_db)
+    ):
+        """Update a campaign (only if draft or scheduled)."""
+        existing = db.table("scheduled_campaigns").select("status").eq("id", str(campaign_id)).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+    
+        if existing.data[0]["status"] not in ["draft", "scheduled"]:
+            raise HTTPException(status_code=400, detail="Cannot edit campaign in current status")
+    
+        update_data = campaign.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields to update")
+    
+        # Validation for 15m lead time
+        if "scheduled_at" in update_data and update_data["scheduled_at"]:
+>           sched_time = datetime.fromisoformat(update_data["scheduled_at"].replace("Z", "+00:00"))
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: 'str' object cannot be interpreted as an integer
+
+routers\campaigns.py:87: TypeError
+______________________ test_schedule_validation_success _______________________
+
+mock_db = <MagicMock id='2001004828608'>
+
+    def test_schedule_validation_success(mock_db):
+        # Try to update a campaign with a valid future time (30 mins)
+        future_time = datetime.now(timezone.utc) + timedelta(minutes=30)
+        campaign_id = str(uuid.uuid4())
+    
+        mock_db.table().select().eq().execute.return_value = MagicMock(data=[{"status": "draft"}])
+        mock_db.table().update().eq().execute.return_value = MagicMock(data=[{"id": campaign_id, "status": "draft", "scheduled_at": future_time.isoformat()}])
+    
+        payload = {
+            "scheduled_at": future_time.isoformat()
+        }
+    
+>       response = client.patch(f"/campaigns/{campaign_id}", json=payload)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_campaign_router.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:608: in patch
+    return super().patch(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1218: in patch
+    return self.request(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:445: in request
+    return super().request(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:914: in send
+    response = self._send_handling_auth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:348: in handle_request
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py:334: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\anyio\from_thread.py:259: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\applications.py:1135: in __call__
+    await super().__call__(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\applications.py:107: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\cors.py:85: in __call__
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:716: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:736: in app
+    await route.handle(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\routing.py:290: in handle
+    await self.app(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:115: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:101: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:355: in app
+    raw_response = await run_endpoint_function(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\routing.py:243: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+campaign_id = UUID('3827a286-7136-4c45-a006-80287931093e')
+campaign = CampaignUpdate(name=None, message_template=None, segment_criteria=None, schedule_type=None, scheduled_at=datetime.datetime(2026, 2, 14, 21, 16, 45, 87942, tzinfo=TzInfo(0)), recurrence_rule=None, timezone=None, status=None)
+db = <MagicMock id='2001004828608'>
+
+    @router.patch("/{campaign_id}", response_model=Campaign)
+    async def update_campaign(
+        campaign_id: UUID,
+        campaign: CampaignUpdate,
+        db: Client = Depends(get_db)
+    ):
+        """Update a campaign (only if draft or scheduled)."""
+        existing = db.table("scheduled_campaigns").select("status").eq("id", str(campaign_id)).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+    
+        if existing.data[0]["status"] not in ["draft", "scheduled"]:
+            raise HTTPException(status_code=400, detail="Cannot edit campaign in current status")
+    
+        update_data = campaign.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields to update")
+    
+        # Validation for 15m lead time
+        if "scheduled_at" in update_data and update_data["scheduled_at"]:
+>           sched_time = datetime.fromisoformat(update_data["scheduled_at"].replace("Z", "+00:00"))
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: 'str' object cannot be interpreted as an integer
+
+routers\campaigns.py:87: TypeError
+============================== warnings summary ===============================
+config.py:5
+  C:\Users\malik\OneDrive\Desktop\sms\config.py:5: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:72
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:72: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85: PyparsingDeprecationWarning: 'escChar' argument is deprecated, use 'esc_char'
+    quoted_identifier = QuotedString('"', escChar="\\", unquoteResults=True)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\expressions\parser.py:85: PyparsingDeprecationWarning: 'unquoteResults' argument is deprecated, use 'unquote_results'
+    quoted_identifier = QuotedString('"', escChar="\\", unquoteResults=True)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:365
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:365: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:494
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:494: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:498
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:498: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:502
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:502: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:506
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:506: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:538
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:538: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:542
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:542: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:546
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:546: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:550
+  C:\Users\malik\AppData\Local\Programs\Python\Python312\Lib\site-packages\pyiceberg\table\metadata.py:550: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.12/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+models\schemas.py:26
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:26: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Agency(AgencyBase):
+
+models\schemas.py:63
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:63: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Restaurant(RestaurantBase):
+
+models\schemas.py:102
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:102: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Customer(CustomerBase):
+
+models\schemas.py:141
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:141: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Campaign(CampaignBase):
+
+models\schemas.py:160
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:160: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class SMSMessage(BaseModel):
+
+models\schemas.py:182
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:182: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UsageRecord(BaseModel):
+
+models\schemas.py:199
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:199: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TwilioStatusCallback(BaseModel):
+
+models\schemas.py:212
+  C:\Users\malik\OneDrive\Desktop\sms\models\schemas.py:212: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TwilioIncomingMessage(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_campaign_router.py::test_create_campaign_endpoint - fastapi...
+FAILED tests/test_campaign_router.py::test_schedule_validation_failure - Type...
+FAILED tests/test_campaign_router.py::test_schedule_validation_success - Type...
+======================= 3 failed, 21 warnings in 3.34s ========================

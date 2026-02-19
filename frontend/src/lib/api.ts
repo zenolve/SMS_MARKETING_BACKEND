@@ -34,12 +34,22 @@ export const agencyApi = {
     getRestaurants: (id: string) => api.get(`/agencies/${id}/restaurants`),
 }
 
+export const twilioApi = {
+    search: (areaCode: string) => api.get(`/twilio/available-numbers?area_code=${areaCode}&limit=10`),
+    buy: (data: { phone_number: string, restaurant_id: string }) => api.post('/twilio/buy-number', data),
+}
+
+export const statsApi = {
+    getAgencyStats: (agencyId: string) => api.get(`/stats/agency/${agencyId}`),
+}
+
 // Restaurants
 export const restaurantApi = {
     list: (params?: { agency_id?: string; status?: string }) => api.get('/restaurants', { params }),
     get: (id: string) => api.get(`/restaurants/${id}`),
-    create: (data: Record<string, unknown>) => api.post('/restaurants', data),
-    update: (id: string, data: Record<string, unknown>) => api.patch(`/restaurants/${id}`, data),
+    create: (data: any) => api.post('/restaurants', data),
+    signup: (data: any) => api.post('/restaurants/signup', data),
+    update: (id: string, data: any) => api.patch(`/restaurants/${id}`, data),
     delete: (id: string) => api.delete(`/restaurants/${id}`),
     getUsage: (id: string) => api.get(`/restaurants/${id}/usage`),
     getMessages: (id: string, limit = 50) => api.get(`/restaurants/${id}/messages`, { params: { limit } }),

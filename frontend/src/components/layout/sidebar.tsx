@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -67,14 +68,23 @@ export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
     const pathname = usePathname()
     const router = useRouter()
     const supabase = createClient()
+    const { selectedRestaurantId, setSelectedRestaurantId } = useAuth()
     const [isMobileOpen, setIsMobileOpen] = useState(false)
 
-    const navItems = userRole === 'agency_admin' ? agencyNavItems : restaurantNavItems
+    const isImpersonating = !!selectedRestaurantId && userRole === 'agency_admin'
+    const navItems = isImpersonating ? restaurantNavItems :
+        userRole === 'agency_admin' ? agencyNavItems : restaurantNavItems
 
     async function handleLogout() {
         await supabase.auth.signOut()
         router.push('/login')
         toast.success('Logged out successfully')
+    }
+
+    const handleStopManaging = () => {
+        setSelectedRestaurantId(null)
+        router.push('/agency/dashboard')
+        toast.info('Stopped managing restaurant')
     }
 
     const NavContent = () => (
@@ -88,12 +98,27 @@ export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
                     <div>
                         <h1 className="font-semibold text-foreground text-sm">SMS Marketing</h1>
                         <p className="text-xs text-muted-foreground">
-                            {userRole === 'agency_admin' ? 'Agency' : 'Restaurant'}
+                            {isImpersonating ? 'Managing Restaurant' : userRole === 'agency_admin' ? 'Agency' : 'Restaurant'}
                         </p>
                     </div>
                 </div>
                 <ThemeToggle />
             </div>
+
+            {/* Impersonation Banner */}
+            {isImpersonating && (
+                <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-[10px] h-7 border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                        onClick={handleStopManaging}
+                    >
+                        <LogOut className="w-3 h-3 mr-1" />
+                        Stop Managing
+                    </Button>
+                </div>
+            )}
 
             {/* Navigation */}
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

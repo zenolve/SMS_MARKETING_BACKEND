@@ -9,6 +9,7 @@ class AgencyBase(BaseModel):
     name: str
     email: EmailStr
     phone: Optional[str] = None
+    twilio_account_sid: Optional[str] = None
 
 
 class AgencyCreate(AgencyBase):
@@ -41,11 +42,25 @@ class RestaurantBase(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
-    timezone: str = "UTC"
+    timezone: str = "GMT"
 
 
 class RestaurantCreate(RestaurantBase):
     spending_limit_monthly: Optional[float] = None
+    status: Optional[str] = "pending"
+
+
+class RestaurantSignup(RestaurantBase):
+    """Schema for creating a restaurant AND a user account simultaneously."""
+    # User fields
+    admin_email: EmailStr
+    admin_password: str
+    admin_first_name: Optional[str] = None
+    admin_last_name: Optional[str] = None
+    
+    # Restaurant extra fields
+    spending_limit_monthly: Optional[float] = None
+    status: Optional[str] = "active"
 
 
 class RestaurantUpdate(BaseModel):
@@ -67,6 +82,8 @@ class Restaurant(RestaurantBase):
     twilio_phone_number: Optional[str] = None
     spending_limit_monthly: Optional[float] = None
     current_month_spend: float
+    total_customers: int = 0
+    total_messages_sent: int = 0
     created_at: datetime
     updated_at: datetime
 

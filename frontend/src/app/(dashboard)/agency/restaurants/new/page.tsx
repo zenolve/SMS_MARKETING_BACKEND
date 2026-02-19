@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, Loader2, Building2, MapPin, Mail, Phone, Clock, DollarSign } from 'lucide-react'
 import { z } from 'zod'
+import { restaurantApi, agencyApi } from '@/lib/api'
 
 const timezones = [
     { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -28,7 +29,12 @@ const formSchema = z.object({
     phone: z.string().optional(),
     address: z.string().optional(),
     timezone: z.string().min(1),
-    spending_limit_monthly: z.string().optional(),
+    spending_limit_monthly: z.string().optional().refine((val) => !val || !isNaN(parseFloat(val)), {
+        message: "Must be a valid number"
+    }),
+    // New Admin Fields
+    admin_email: z.string().email('Admin email is required'),
+    admin_password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
 type FormInput = z.infer<typeof formSchema>
@@ -36,6 +42,8 @@ type FormInput = z.infer<typeof formSchema>
 export default function NewRestaurantPage() {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [agencyId, setAgencyId] = useState<string | null>(null)
+    const [isLoadingAgency, setIsLoadingAgency] = useState(true)
 
     const {
         register,
@@ -52,18 +60,72 @@ export default function NewRestaurantPage() {
 
     const timezone = watch('timezone')
 
+    // Fetch agency ID on mount
+    useEffect(() => {
+        async function fetchAgency() {
+            try {
+                const { data } = await agencyApi.list()
+                if (data && data.length > 0) {
+                    setAgencyId(data[0].id)
+                } else {
+                    // Fallback to Default Agency ID
+                    console.warn('No agencies found, defaulting to system agency.')
+                    setAgencyId('00000000-0000-0000-0000-000000000001')
+                }
+            } catch (error) {
+                console.error('Error fetching agency:', error)
+                // Fallback to Default Agency ID on error
+                setAgencyId('00000000-0000-0000-0000-000000000001')
+            } finally {
+                setIsLoadingAgency(false)
+            }
+        }
+        fetchAgency()
+    }, [])
+
     async function onSubmit(data: FormInput) {
+        if (!agencyId) {
+            toast.error('Agency ID missing. Cannot create restaurant.')
+            return
+        }
+
         setIsSubmitting(true)
         try {
-            // In production, this would call the API
-            await new Promise((resolve) => setTimeout(resolve, 1500))
-            toast.success('Restaurant created successfully!')
+            // Convert spending limit to float or null
+            const spendingLimit = data.spending_limit_monthly
+                ? parseFloat(data.spending_limit_monthly)
+                : null
+
+            // Use the SIGNUP endpoint instead of create
+            await restaurantApi.signup({
+                ...data,
+                // The backend signup expects 'name' (restaurant name) and admin fields
+                // It also needs agency_id if we want to be strict, but current backend implementation might rely on default or user metadata
+                // Wait, our backend endpoint doesn't strictly require agency_id in the Pydantic model for signup?
+                // Actually RestaurantSignup inherits RestaurantBase which HAS agency_id.
+                // So we MUST pass agency_id.
+                agency_id: agencyId,
+                spending_limit_monthly: spendingLimit,
+                status: 'active'
+            })
+
+            toast.success('Restaurant and Admin User created successfully!')
             router.push('/agency/restaurants')
-        } catch {
-            toast.error('Failed to create restaurant')
+        } catch (error: any) {
+            console.error('Error creating restaurant:', error)
+            const msg = error.response?.data?.detail || 'Failed to create restaurant'
+            toast.error(msg)
         } finally {
             setIsSubmitting(false)
         }
+    }
+
+    if (isLoadingAgency) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
     }
 
     return (
@@ -80,11 +142,53 @@ export default function NewRestaurantPage() {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">Add Restaurant</h1>
-                    <p className="text-muted-foreground mt-1">Onboard a new restaurant to your agency</p>
+                    <p className="text-muted-foreground mt-1">Create a new restaurant and admin account</p>
                 </div>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
+                {/* Admin User Information */}
+                <Card className="bg-card border-border mb-6">
+                    <CardHeader>
+                        <CardTitle className="text-foreground flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-primary" />
+                            Admin User Account
+                        </CardTitle>
+                        <CardDescription className="text-muted-foreground">
+                            Credentials for the restaurant owner to log in
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="admin_email" className="text-foreground">Admin Email *</Label>
+                            <Input
+                                id="admin_email"
+                                type="email"
+                                placeholder="owner@restaurant.com"
+                                className="bg-background border-border text-foreground placeholder:text-muted-foreground/50"
+                                {...register('admin_email')}
+                            />
+                            {errors.admin_email && (
+                                <p className="text-sm text-red-500">{errors.admin_email.message}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="admin_password" className="text-foreground">Password *</Label>
+                            <Input
+                                id="admin_password"
+                                type="password"
+                                placeholder="••••••••"
+                                className="bg-background border-border text-foreground placeholder:text-muted-foreground/50"
+                                {...register('admin_password')}
+                            />
+                            {errors.admin_password && (
+                                <p className="text-sm text-red-500">{errors.admin_password.message}</p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Basic Information */}
                 <Card className="bg-card border-border">
                     <CardHeader>

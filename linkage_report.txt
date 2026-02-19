@@ -1,0 +1,15 @@
+--- Checking Restaurant <-> User Linkage ---
+Total Restaurants: 8
+Total Users: 3
+
+--- Restaurants without a Linked User (Orphans) ---
+ [ORPHAN] ID: fa569d5d-19a5-4bd2-8370-bd6041e778d5 | Name: fast
+ [LINKED] ID: a3584041-fd9f-41e3-b251-764bfd8af217 | Name: abdullah | Owned by: ['Platform Administrator']
+ [LINKED] ID: 3523b572-6b73-4ad6-973e-d1f3daa94bd1 | Name: fastnucesstudent@gmail.com | Owned by: ['fastnucesstudent@gmail.com']
+ [ORPHAN] ID: 9b6126cf-5a61-47fc-b6fe-682080a3538a | Name: fast
+ [ORPHAN] ID: d4008486-76b4-4660-ac27-77d80cc19459 | Name: My Restaurant
+ [ORPHAN] ID: d81887f4-eba4-49d0-af60-a75fcb7f140a | Name: My Restaurant
+ [ORPHAN] ID: d0a4abf3-9349-47be-bfec-0ff60aae8718 | Name: My Restaurant
+ [ORPHAN] ID: ce145e35-c53f-48d5-a9e7-f9ab60da24d4 | Name: Usage Test Restaurant
+
+Total Orphans: 6
