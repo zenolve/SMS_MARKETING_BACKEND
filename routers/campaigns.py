@@ -91,7 +91,15 @@ async def update_campaign(
         if sched_time < datetime.now(timezone.utc) + timedelta(minutes=15):
              raise HTTPException(status_code=400, detail="Scheduled time must be at least 15 minutes in the future")
 
-    result = db.table("scheduled_campaigns").update(update_data).eq("id", str(campaign_id)).execute()
+    # Serialize datetime objects
+    serialized_update = {}
+    for key, value in update_data.items():
+        if isinstance(value, datetime):
+            serialized_update[key] = value.isoformat()
+        else:
+            serialized_update[key] = value
+
+    result = db.table("scheduled_campaigns").update(serialized_update).eq("id", str(campaign_id)).execute()
     return result.data[0]
 
 
@@ -161,9 +169,7 @@ async def send_campaign_endpoint(
     if campaign_data.get("scheduled_at"):
         sched_time = datetime.fromisoformat(campaign_data["scheduled_at"].replace("Z", "+00:00"))
         if sched_time < datetime.now(timezone.utc) + timedelta(minutes=15):
-             # Fallback to immediate send is handled in send_campaign service if needed,
-             # but we should enforce PRD lead time strictly here.
-             pass
+             raise HTTPException(status_code=400, detail="Scheduled time must be at least 15 minutes in the future")
 
     # Update status to sending
     db.table("scheduled_campaigns").update({"status": "sending"}).eq("id", str(campaign_id)).execute()

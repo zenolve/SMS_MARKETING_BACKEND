@@ -142,12 +142,10 @@ async def send_campaign(campaign_id: str):
                 db.table("scheduled_campaigns").update({"status": "failed"}).eq("id", campaign_id).execute()
                 return
         elif scheduled_time > now_utc:
-            logger.warning("Scheduled time < 15 mins. Twilio Native Scheduler will reject this.")
-            # We will try to send immediately if it's very close, or fail if we want to be strict.
-            # PRD requirement: Lead time 15m. So we should have validated earlier. 
-            # If we are here, we might try immediate send as fallback or fail.
-            logger.info("Falling back to immediate send (Lead time too short for Twilio Scheduler)")
-            use_scheduling = False
+            # Strictly fail if validation was somehow bypassed (though router should catch this)
+            logger.error("Scheduled time < 15 mins. Rejecting as per strict rules.")
+            db.table("scheduled_campaigns").update({"status": "failed"}).eq("id", campaign_id).execute()
+            return
     
     # Send/Schedule messages
     sent_count = 0
