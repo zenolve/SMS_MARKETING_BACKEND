@@ -154,6 +154,7 @@ async def send_campaign(campaign_id: str):
     
     # Send/Schedule messages
     sent_count = 0
+    failed_count = 0
     twilio_sids = []
     
     for customer in recipients:
@@ -232,16 +233,38 @@ async def send_campaign(campaign_id: str):
                 "twilio_error_message": str(e),
             }).execute()
             increment_usage(db, restaurant_id, "failed")
+            failed_count += 1
     
     # Update campaign status
     final_status = "scheduled" if use_scheduling else "sent"
     db.table("scheduled_campaigns").update({
         "status": final_status,
-        "total_sent": sent_count if not use_scheduling else 0,
+        "total_sent": sent_count,
+        "total_failed": failed_count,
         "sent_at": datetime.utcnow().isoformat() if not use_scheduling else None,
         "twilio_message_sids": twilio_sids
     }).eq("id", campaign_id).execute()
 
+    # Send Notification Email
+    admin_email = restaurant_data.get("email")
+    if admin_email:
+        from services.email_service import send_email_notification
+        from services.email_templates import get_scheduled_email_html, get_completed_email_html
+        
+        rest_name = restaurant_data.get("name", "Restaurant Admin")
+        camp_name = campaign_data.get("name", "Unknown Campaign")
+        
+        if use_scheduling:
+            subject = f"Campaign Scheduled: {camp_name}"
+            sched_str = scheduled_time.strftime('%Y-%m-%d %H:%M:%S UTC')
+            html_body = get_scheduled_email_html(camp_name, sched_str, len(recipients), rest_name)
+            logger.info(f"Attempting to dispatch SCHEDULING email to {admin_email}...")
+            send_email_notification(admin_email, subject, html_body, is_html=True)
+        else:
+            subject = f"Campaign Sent: {camp_name}"
+            html_body = get_completed_email_html(camp_name, sent_count, failed_count, rest_name)
+            logger.info(f"Attempting to dispatch COMPLETION email to {admin_email}...")
+            send_email_notification(admin_email, subject, html_body, is_html=True)
 
 async def cancel_campaign_messages(campaign_id: str, db: Client):
     """Cancel all scheduled messages for a campaign in Twilio."""
