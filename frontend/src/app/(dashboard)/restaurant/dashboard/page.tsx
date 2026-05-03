@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,7 @@ interface StatCardProps {
     icon: React.ElementType
 }
 
-function StatCard({ title, value, change, changeType = 'neutral', icon: Icon }: StatCardProps) {
+const StatCard = React.memo(function StatCard({ title, value, change, changeType = 'neutral', icon: Icon }: StatCardProps) {
     return (
         <Card className="bg-card border-border">
             <CardContent className="p-6">
@@ -52,7 +53,7 @@ function StatCard({ title, value, change, changeType = 'neutral', icon: Icon }: 
             </CardContent>
         </Card>
     )
-}
+})
 
 const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
     sent: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', icon: CheckCircle2 },

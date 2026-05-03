@@ -1,13 +1,12 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
-import { CalendarIcon, Clock, Moon, AlertCircle } from 'lucide-react'
+import { CalendarIcon, Clock, Moon, AlertCircle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DeadHourSchedulerProps {
@@ -17,6 +16,7 @@ interface DeadHourSchedulerProps {
     onTimeChange: (time: string) => void
     timezone: string
     onTimezoneChange: (tz: string) => void
+    onValidChange?: (valid: boolean) => void
 }
 
 const timezones = [
@@ -49,9 +49,26 @@ export function DeadHourScheduler({
     onTimeChange,
     timezone,
     onTimezoneChange,
+    onValidChange,
 }: DeadHourSchedulerProps) {
     const selectedHour = time ? parseInt(time.split(':')[0]) : null
     const isDeadHour = selectedHour !== null && deadHours.includes(selectedHour)
+
+    // Check if the selected date+time is within 15 minutes of now
+    const isTooSoon = (() => {
+        if (!date || !time) return false
+        const [hours, minutes] = time.split(':').map(Number)
+        const scheduled = new Date(date)
+        scheduled.setHours(hours, minutes, 0, 0)
+        const minLeadTime = new Date(Date.now() + 15 * 60 * 1000)
+        return scheduled < minLeadTime
+    })()
+
+    // Notify parent whenever validity changes
+    if (onValidChange) {
+        // date and time both set and not too soon = valid
+        onValidChange(!!date && !!time && !isTooSoon)
+    }
 
     return (
         <div className="space-y-4">
@@ -137,8 +154,21 @@ export function DeadHourScheduler({
                 </Select>
             </div>
 
+            {/* 15-minute lead time warning */}
+            {isTooSoon && (
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/40">
+                    <XCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-medium text-destructive">Too soon to schedule</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Campaigns must be scheduled at least <strong>15 minutes in the future</strong>. Please pick a later time.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Dead Hour Indicator */}
-            {isDeadHour && (
+            {isDeadHour && !isTooSoon && (
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/10 border border-primary/30">
                     <Moon className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                     <div>
@@ -150,7 +180,7 @@ export function DeadHourScheduler({
                 </div>
             )}
 
-            {!isDeadHour && time && (
+            {!isDeadHour && !isTooSoon && time && (
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
                     <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div>

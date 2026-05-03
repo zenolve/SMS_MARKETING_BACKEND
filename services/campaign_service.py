@@ -105,8 +105,10 @@ async def send_campaign(campaign_id: str):
     if not recipients:
         logger.warning("No recipients found for campaign")
         db.table("scheduled_campaigns").update({
-            "status": "sent",
+            "status": "failed",
             "total_recipients": 0,
+            "total_sent": 0,
+            "total_failed": 0,
             "sent_at": datetime.utcnow().isoformat()
         }).eq("id", campaign_id).execute()
         return
@@ -146,14 +148,14 @@ async def send_campaign(campaign_id: str):
                 logger.error("Twilio Scheduling REQUIRES a Messaging Service SID")
                 db.table("scheduled_campaigns").update({"status": "failed"}).eq("id", campaign_id).execute()
                 return
-        elif scheduled_time > now_utc:
-            # Strictly fail if validation was somehow bypassed (though router should catch this)
-            logger.error("Scheduled time < 15 mins. Rejecting as per strict rules.")
-            db.table("scheduled_campaigns").update({"status": "failed"}).eq("id", campaign_id).execute()
-            return
+        else:
+            # Scheduled time is too close (< 15 mins) or already past — send immediately
+            logger.info(f"Scheduled time {scheduled_time} is within 15 minutes or past — sending immediately")
+            use_scheduling = False
     
     # Send/Schedule messages
     sent_count = 0
+    failed_count = 0
     twilio_sids = []
     
     for customer in recipients:
@@ -208,7 +210,7 @@ async def send_campaign(campaign_id: str):
                 "to_phone": customer["phone"],
                 "from_phone": final_sender_phone if not messaging_service_sid else None,
                 "message_body": message_body,
-                "twilio_sid": result["sid"],
+                "twilio_message_sid": result["sid"],
                 "status": "scheduled" if use_scheduling else "sent", 
                 "scheduled_at": scheduled_time.isoformat() if use_scheduling else None,
                 "sent_at": datetime.utcnow().isoformat() if not use_scheduling else None
@@ -232,16 +234,48 @@ async def send_campaign(campaign_id: str):
                 "twilio_error_message": str(e),
             }).execute()
             increment_usage(db, restaurant_id, "failed")
+            failed_count += 1
     
-    # Update campaign status
-    final_status = "scheduled" if use_scheduling else "sent"
+    # Update campaign status based on true delivery outcome.
+    if use_scheduling:
+        final_status = "scheduled"
+    elif sent_count == 0 and failed_count > 0:
+        final_status = "failed"
+    elif sent_count > 0 and failed_count > 0:
+        # Partial success — some messages sent, some failed
+        final_status = "sent"
+        logger.warning(f"Campaign {campaign_id} partially failed: {sent_count} sent, {failed_count} failed")
+    else:
+        final_status = "sent"
+
     db.table("scheduled_campaigns").update({
         "status": final_status,
-        "total_sent": sent_count if not use_scheduling else 0,
+        "total_sent": sent_count,
+        "total_failed": failed_count,
         "sent_at": datetime.utcnow().isoformat() if not use_scheduling else None,
         "twilio_message_sids": twilio_sids
     }).eq("id", campaign_id).execute()
 
+    # Send Notification Email
+    admin_email = restaurant_data.get("email")
+    if admin_email:
+        from services.email_service import send_email_notification
+        from services.email_templates import get_scheduled_email_html, get_completed_email_html
+        
+        rest_name = restaurant_data.get("name", "Restaurant Admin")
+        camp_name = campaign_data.get("name", "Unknown Campaign")
+        
+        if use_scheduling:
+            subject = f"Campaign Scheduled: {camp_name}"
+            sched_str = scheduled_time.strftime('%Y-%m-%d %H:%M:%S UTC')
+            html_body = get_scheduled_email_html(camp_name, sched_str, len(recipients), rest_name)
+            logger.info(f"Attempting to dispatch SCHEDULING email to {admin_email}...")
+            send_email_notification(admin_email, subject, html_body, is_html=True)
+        else:
+            subject = f"Campaign Sent: {camp_name}"
+            html_body = get_completed_email_html(camp_name, sent_count, failed_count, rest_name)
+            logger.info(f"Attempting to dispatch COMPLETION email to {admin_email}...")
+            send_email_notification(admin_email, subject, html_body, is_html=True)
 
 async def cancel_campaign_messages(campaign_id: str, db: Client):
     """Cancel all scheduled messages for a campaign in Twilio."""
@@ -256,13 +290,13 @@ async def cancel_campaign_messages(campaign_id: str, db: Client):
     subaccount_sid = rest.data[0].get("twilio_subaccount_sid") if rest.data else None
     auth_token = rest.data[0].get("twilio_auth_token") if rest.data else None
     
-    messages = db.table("sms_messages").select("twilio_sid").eq("campaign_id", campaign_id).execute()
+    messages = db.table("sms_messages").select("twilio_message_sid, twilio_sid").eq("campaign_id", campaign_id).execute()
     if not messages.data:
         return
     
     cancelled_count = 0
     for msg in messages.data:
-        sid = msg.get("twilio_sid")
+        sid = msg.get("twilio_message_sid") or msg.get("twilio_sid")
         if sid:
             if cancel_scheduled_message(sid, account_sid=subaccount_sid, auth_token=auth_token):
                 cancelled_count += 1

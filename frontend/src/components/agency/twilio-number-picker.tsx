@@ -75,7 +75,8 @@ export function TwilioNumberPicker({ onSelect, restaurantId }: TwilioNumberPicke
         setIsSearching(true)
         setNumbers([])
         try {
-            const { data } = await twilioApi.search(areaCode)
+            // Pass restaurantId so the backend searches under the right Twilio account
+            const { data } = await twilioApi.search(areaCode, restaurantId || selectedRestaurantId || undefined)
             setNumbers(data)
             if (data.length === 0) {
                 toast.info('No numbers found for this area code')
@@ -234,7 +235,7 @@ export function TwilioNumberPicker({ onSelect, restaurantId }: TwilioNumberPicke
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-border flex justify-between">
                                     <span className="text-muted-foreground">Monthly cost</span>
-                                    <span className="text-foreground font-medium">€{selectedNumberData.monthly_cost.toFixed(2)}/month</span>
+                                    <span className="text-foreground font-medium">£{selectedNumberData.monthly_cost.toFixed(2)}/month</span>
                                 </div>
                             </div>
 

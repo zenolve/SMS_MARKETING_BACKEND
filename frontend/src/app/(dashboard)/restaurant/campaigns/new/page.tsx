@@ -13,8 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { SMSPreviewer } from '@/components/campaigns/sms-previewer'
-import { DeadHourScheduler } from '@/components/campaigns/dead-hour-scheduler'
-import { SchedulerHeatmap } from '@/components/campaigns/scheduler-heatmap'
+import dynamic from 'next/dynamic'
 import { campaignSchema, type CampaignInput } from '@/lib/validations'
 import { cn } from '@/lib/utils'
 import { calculateSegments } from '@/lib/sms-utils'
@@ -31,6 +30,36 @@ import {
     Loader2,
     AlertCircle,
 } from 'lucide-react'
+
+const DeadHourScheduler = dynamic(
+    async () => {
+        try {
+            const mod = await import('@/components/campaigns/dead-hour-scheduler')
+            return { default: mod.DeadHourScheduler }
+        } catch {
+            return { default: () => <p className="text-destructive">Failed to load scheduler. Please refresh.</p> }
+        }
+    },
+    {
+        ssr: false,
+        loading: () => <Loader2 className="h-6 w-6 animate-spin" />,
+    }
+)
+
+const SchedulerHeatmap = dynamic(
+    async () => {
+        try {
+            const mod = await import('@/components/campaigns/scheduler-heatmap')
+            return { default: mod.SchedulerHeatmap }
+        } catch {
+            return { default: () => <p className="text-destructive">Failed to load scheduler. Please refresh.</p> }
+        }
+    },
+    {
+        ssr: false,
+        loading: () => <Loader2 className="h-6 w-6 animate-spin" />,
+    }
+)
 
 const steps = [
     { id: 1, title: 'Message', icon: MessageSquare },
@@ -55,6 +84,7 @@ export default function NewCampaignPage() {
     const [scheduleTime, setScheduleTime] = useState('')
     const [timezone, setTimezone] = useState('GMT')
     const [scheduleType, setScheduleType] = useState<'now' | 'scheduled'>('scheduled')
+    const [scheduleValid, setScheduleValid] = useState(false)
 
     // API hooks
     const createCampaign = useCreateCampaign()
@@ -137,7 +167,12 @@ export default function NewCampaignPage() {
 
             // Build scheduled_at datetime
             let scheduled_at: string | undefined
-            if (scheduleType === 'scheduled' && scheduleDate && scheduleTime) {
+            if (scheduleType === 'scheduled') {
+                if (!scheduleDate || !scheduleTime) {
+                    toast.error('Please select a date and time for your scheduled campaign.')
+                    return
+                }
+
                 const [hours, minutes] = scheduleTime.split(':').map(Number)
                 const scheduledDate = new Date(scheduleDate)
                 scheduledDate.setHours(hours, minutes, 0, 0)
@@ -173,10 +208,10 @@ export default function NewCampaignPage() {
             // If sending immediately or scheduled, trigger send
             await sendCampaign.mutateAsync(newCampaignId)
 
-            toast.success(
+            toast.info(
                 scheduleType === 'now'
-                    ? 'Campaign sending started!'
-                    : 'Campaign scheduled successfully!'
+                    ? 'Campaign sent! Check the campaigns list for delivery status.'
+                    : 'Campaign scheduled successfully.'
             )
             router.push('/restaurant/campaigns')
         } catch (error) {
@@ -374,6 +409,7 @@ export default function NewCampaignPage() {
                                             onTimeChange={setScheduleTime}
                                             timezone={timezone}
                                             onTimezoneChange={setTimezone}
+                                            onValidChange={setScheduleValid}
                                         />
                                     </TabsContent>
                                 </Tabs>
@@ -413,7 +449,7 @@ export default function NewCampaignPage() {
                                     <div className="p-4 rounded-lg bg-accent/50 border border-border">
                                         <p className="text-xs text-muted-foreground uppercase mb-1">Estimated Cost</p>
                                         <p className="text-2xl font-bold text-foreground">
-                                            €{((selectedSegmentData?.count || 0) * (calculateSegments(message).segments * 0.0079)).toFixed(2)}
+                                            £{((selectedSegmentData?.count || 0) * (calculateSegments(message).segments * 0.0079)).toFixed(2)}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
                                             Based on {calculateSegments(message).segments} segment(s) per message ({calculateSegments(message).encoding})
@@ -438,7 +474,8 @@ export default function NewCampaignPage() {
                             {currentStep < 4 ? (
                                 <Button
                                     onClick={nextStep}
-                                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                                    disabled={currentStep === 3 && scheduleType === 'scheduled' && !scheduleValid}
+                                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
                                 >
                                     Continue
                                     <ArrowRight className="ml-2 h-4 w-4" />

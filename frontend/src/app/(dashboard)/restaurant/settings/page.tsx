@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import dynamic from 'next/dynamic'
 import {
     Settings,
     Building2,
@@ -21,7 +22,21 @@ import {
     Save,
     ExternalLink,
 } from 'lucide-react'
-import { TwilioNumberPicker } from '@/components/agency/twilio-number-picker'
+
+const TwilioNumberPicker = dynamic(
+    async () => {
+        try {
+            const mod = await import('@/components/agency/twilio-number-picker')
+            return { default: mod.TwilioNumberPicker }
+        } catch {
+            return { default: () => <p className="text-destructive">Failed to load. Please refresh.</p> }
+        }
+    },
+    {
+        ssr: false,
+        loading: () => <Loader2 className="h-6 w-6 animate-spin" />,
+    }
+)
 
 interface RestaurantSettings {
     name: string
@@ -30,6 +45,7 @@ interface RestaurantSettings {
     address: string
     timezone: string
     twilio_phone_number: string
+    twilio_subaccount_sid?: string
     monthly_sms_limit: number
 }
 
@@ -38,6 +54,7 @@ export default function SettingsPage() {
     const supabase = createClient()
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
+    const [isInitializing, setIsInitializing] = useState(false)
     const [settings, setSettings] = useState<RestaurantSettings | null>(null)
 
     const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<RestaurantSettings>()
@@ -53,7 +70,7 @@ export default function SettingsPage() {
         try {
             const { data, error } = await supabase
                 .from('restaurants')
-                .select('name, email, phone, address, timezone, twilio_phone_number, monthly_sms_limit')
+                .select('name, email, phone, address, timezone, twilio_phone_number, twilio_subaccount_sid, monthly_sms_limit')
                 .eq('id', restaurantId)
                 .single()
 
@@ -66,6 +83,36 @@ export default function SettingsPage() {
             toast.error('Failed to load settings')
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    async function handleInitializeTwilio() {
+        if (!restaurantId) return
+        
+        setIsInitializing(true)
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/restaurants/${restaurantId}/initialize-twilio`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+
+            if (!response.ok) {
+                const err = await response.json()
+                throw new Error(err.detail || 'Failed to initialize Twilio')
+            }
+
+            const updatedRestaurant = await response.json()
+            toast.success('Twilio account initialized successfully!')
+            
+            // Refresh settings
+            loadSettings()
+        } catch (error: any) {
+            console.error('Error initializing Twilio:', error)
+            toast.error(error.message || 'Failed to initialize Twilio. Your agency may have reached its subaccount limit.')
+        } finally {
+            setIsInitializing(false)
         }
     }
 
@@ -88,8 +135,8 @@ export default function SettingsPage() {
             if (error) throw error
 
             toast.success('Settings saved successfully')
-            setSettings(data)
-            reset(data)
+            setSettings({ ...settings, ...data } as RestaurantSettings)
+            reset({ ...settings, ...data } as RestaurantSettings)
         } catch (error) {
             console.error('Error saving settings:', error)
             toast.error('Failed to save settings')
@@ -225,16 +272,48 @@ export default function SettingsPage() {
                         <CardHeader>
                             <CardTitle className="text-foreground">SMS Configuration</CardTitle>
                             <CardDescription className="text-muted-foreground">
-                                View your SMS sending settings
+                                View and manage your SMS sending settings
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            {/* Subaccount Status */}
+                            <div className="p-4 rounded-lg bg-accent/50 border border-border">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-medium text-foreground">Twilio Subaccount</p>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            {settings?.twilio_subaccount_sid 
+                                                ? `Configured (${settings.twilio_subaccount_sid})` 
+                                                : 'Not Initialized'}
+                                        </p>
+                                    </div>
+                                    {settings?.twilio_subaccount_sid ? (
+                                        <div className="bg-green-500/20 text-green-500 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider">
+                                            Connected
+                                        </div>
+                                    ) : (
+                                        <Button 
+                                            size="sm" 
+                                            onClick={handleInitializeTwilio}
+                                            disabled={isInitializing}
+                                            className="bg-amber-600 hover:bg-amber-700 text-white"
+                                        >
+                                            {isInitializing ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                'Initialize Now'
+                                            )}
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="p-4 rounded-lg bg-accent/50 border border-border">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="font-medium text-foreground">Twilio Phone Number</p>
                                         <p className="text-sm text-muted-foreground mt-1">
-                                            {settings?.twilio_phone_number || 'Using messaging service (no dedicated number)'}
+                                            {settings?.twilio_phone_number || 'No dedicated number assigned'}
                                         </p>
                                     </div>
                                     <Phone className="h-5 w-5 text-primary" />
@@ -253,18 +332,21 @@ export default function SettingsPage() {
                                 </div>
                             </div>
 
-                            <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/30">
-                                <p className="text-sm text-indigo-300">
-                                    <strong>Need to adjust limits?</strong> Contact your agency administrator to adjust your monthly SMS limits.
-                                </p>
-                            </div>
-
-                            {!settings?.twilio_phone_number && (
+                            {!settings?.twilio_subaccount_sid ? (
+                                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                                    <p className="text-sm text-amber-300">
+                                        <strong>Subaccount Required:</strong> You must initialize your Twilio account before you can send messages or buy a phone number.
+                                    </p>
+                                </div>
+                            ) : !settings?.twilio_phone_number && (
                                 <div className="mt-8 border-t border-border pt-8">
-                                    <h3 className="text-lg font-medium text-foreground mb-4">Get a Dedicated Number</h3>
+                                    <h3 className="text-lg font-medium text-foreground mb-4 flex items-center gap-2">
+                                        <ExternalLink className="w-5 h-5 text-indigo-500" />
+                                        Get a Dedicated Number
+                                    </h3>
                                     <TwilioNumberPicker
                                         restaurantId={restaurantId || undefined}
-                                        onSelect={(number) => {
+                                        onSelect={(number: string) => {
                                             if (settings) {
                                                 setSettings({ ...settings, twilio_phone_number: number })
                                             }

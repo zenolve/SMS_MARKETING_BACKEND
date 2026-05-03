@@ -108,7 +108,7 @@ export function SMSPreviewer({ message, senderName = 'Restaurant', className }: 
                         {remainingChars} chars until next segment • {encoding} encoding
                     </p>
                     <p className="text-xs font-medium text-foreground">
-                        ~€{costPerMessage.toFixed(4)} est. per message
+                        ~£{costPerMessage.toFixed(4)} est. per message
                     </p>
                 </div>
             </div>

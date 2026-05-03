@@ -36,6 +36,7 @@ import {
     Store,
     Search,
     RefreshCw,
+    Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -55,7 +56,7 @@ export default function AdminDashboardPage() {
     const [approvedUsers, setApprovedUsers] = useState<UserProfile[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [actionUser, setActionUser] = useState<UserProfile | null>(null)
-    const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null)
+    const [actionType, setActionType] = useState<'approve' | 'reject' | 'delete' | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [activeTab, setActiveTab] = useState('pending')
@@ -189,6 +190,38 @@ export default function AdminDashboardPage() {
             setPendingUsers(prev => [{ ...user, is_verified: false }, ...prev])
         } catch (err) {
             toast.error('Failed to revoke access')
+        }
+    }
+
+    async function handleDelete() {
+        if (!actionUser) return
+        setIsSubmitting(true)
+        try {
+            const supabase = createClient()
+            const session = (await supabase.auth.getSession()).data.session
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || '/api'
+
+            const res = await fetch(`${apiUrl}/admin/users/${actionUser.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`,
+                },
+            })
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}))
+                throw new Error(err.detail || 'Delete failed')
+            }
+
+            toast.success(`${actionUser.business_name || 'User'} permanently deleted`)
+            setPendingUsers(prev => prev.filter(u => u.id !== actionUser.id))
+            setApprovedUsers(prev => prev.filter(u => u.id !== actionUser.id))
+            setActionUser(null)
+            setActionType(null)
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to delete user')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -337,6 +370,10 @@ export default function AdminDashboardPage() {
                                             setActionUser(user)
                                             setActionType('reject')
                                         }}
+                                        onDelete={(user) => {
+                                            setActionUser(user)
+                                            setActionType('delete')
+                                        }}
                                         isPending={true}
                                         formatDate={formatDate}
                                     />
@@ -357,6 +394,10 @@ export default function AdminDashboardPage() {
                                     <UserTable
                                         users={filteredApproved}
                                         onRevoke={handleRevoke}
+                                        onDelete={(user) => {
+                                            setActionUser(user)
+                                            setActionType('delete')
+                                        }}
                                         isPending={false}
                                         formatDate={formatDate}
                                     />
@@ -375,7 +416,9 @@ export default function AdminDashboardPage() {
                 <DialogContent className="bg-card border-border">
                     <DialogHeader>
                         <DialogTitle className="text-foreground">
-                            {actionType === 'approve' ? 'Approve User' : 'Reject User'}
+                            {actionType === 'approve' ? 'Approve User'
+                                : actionType === 'reject' ? 'Reject User'
+                                : 'Permanently Delete User'}
                         </DialogTitle>
                         <DialogDescription className="text-muted-foreground">
                             {actionType === 'approve' ? (
@@ -384,16 +427,25 @@ export default function AdminDashboardPage() {
                                     <span className="text-foreground font-medium">
                                         {actionUser?.business_name || 'this user'}
                                     </span>
-                                    ? They will be able to access the platform and start creating campaigns.
+                                    ? They will be able to access the platform.
                                 </>
-                            ) : (
+                            ) : actionType === 'reject' ? (
                                 <>
                                     Are you sure you want to reject{' '}
                                     <span className="text-foreground font-medium">
                                         {actionUser?.business_name || 'this user'}
                                     </span>
-                                    ? Their account will be removed.
+                                    ? Their profile will be removed.
                                 </>
+                            ) : (
+                                <span className="text-destructive">
+                                    This will <strong>permanently delete</strong>{' '}
+                                    <span className="text-foreground font-medium">
+                                        {actionUser?.business_name || 'this user'}
+                                    </span>{' '}
+                                    and ALL their data — restaurants, campaigns, customers, messages, and transactions.
+                                    This cannot be undone.
+                                </span>
                             )}
                         </DialogDescription>
                     </DialogHeader>
@@ -409,7 +461,11 @@ export default function AdminDashboardPage() {
                             Cancel
                         </Button>
                         <Button
-                            onClick={actionType === 'approve' ? handleApprove : handleReject}
+                            onClick={
+                                actionType === 'approve' ? handleApprove
+                                : actionType === 'reject' ? handleReject
+                                : handleDelete
+                            }
                             disabled={isSubmitting}
                             className={
                                 actionType === 'approve'
@@ -427,10 +483,15 @@ export default function AdminDashboardPage() {
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     Approve
                                 </>
-                            ) : (
+                            ) : actionType === 'reject' ? (
                                 <>
                                     <XCircle className="mr-2 h-4 w-4" />
                                     Reject
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Permanently
                                 </>
                             )}
                         </Button>
@@ -447,6 +508,7 @@ function UserTable({
     onApprove,
     onReject,
     onRevoke,
+    onDelete,
     isPending,
     formatDate,
 }: {
@@ -454,6 +516,7 @@ function UserTable({
     onApprove?: (user: UserProfile) => void
     onReject?: (user: UserProfile) => void
     onRevoke?: (user: UserProfile) => void
+    onDelete?: (user: UserProfile) => void
     isPending: boolean
     formatDate: (date: string) => string
 }) {
@@ -512,36 +575,48 @@ function UserTable({
                             {formatDate(user.created_at)}
                         </TableCell>
                         <TableCell className="text-right">
-                            {isPending ? (
-                                <div className="flex items-center justify-end gap-2">
-                                    <Button
-                                        size="sm"
-                                        onClick={() => onApprove?.(user)}
-                                        className="bg-emerald-600 hover:bg-emerald-700"
-                                    >
-                                        <CheckCircle className="mr-1 h-4 w-4" />
-                                        Approve
-                                    </Button>
+                            <div className="flex items-center justify-end gap-2">
+                                {isPending ? (
+                                    <>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => onApprove?.(user)}
+                                            className="bg-emerald-600 hover:bg-emerald-700"
+                                        >
+                                            <CheckCircle className="mr-1 h-4 w-4" />
+                                            Approve
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => onReject?.(user)}
+                                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                        >
+                                            <XCircle className="mr-1 h-4 w-4" />
+                                            Reject
+                                        </Button>
+                                    </>
+                                ) : (
                                     <Button
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() => onReject?.(user)}
-                                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                        onClick={() => onRevoke?.(user)}
+                                        className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
                                     >
-                                        <XCircle className="mr-1 h-4 w-4" />
-                                        Reject
+                                        Revoke Access
                                     </Button>
-                                </div>
-                            ) : (
+                                )}
+                                {/* Delete button — always visible for both pending and approved */}
                                 <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => onRevoke?.(user)}
-                                    className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                                    onClick={() => onDelete?.(user)}
+                                    className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                    title="Permanently delete user and all data"
                                 >
-                                    Revoke Access
+                                    <Trash2 className="h-4 w-4" />
                                 </Button>
-                            )}
+                            </div>
                         </TableCell>
                     </TableRow>
                 ))}

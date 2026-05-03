@@ -3,9 +3,24 @@
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import dynamic from 'next/dynamic'
 import { ArrowLeft, Phone, Loader2 } from 'lucide-react'
-import { TwilioNumberPicker } from '@/components/agency/twilio-number-picker'
 import { useRestaurant } from '@/lib/queries'
+
+const TwilioNumberPicker = dynamic(
+    async () => {
+        try {
+            const mod = await import('@/components/agency/twilio-number-picker')
+            return { default: mod.TwilioNumberPicker }
+        } catch {
+            return { default: () => <p className="text-destructive">Failed to load. Please refresh.</p> }
+        }
+    },
+    {
+        ssr: false,
+        loading: () => <Loader2 className="h-6 w-6 animate-spin" />,
+    }
+)
 
 export default function RestaurantPhonePage() {
     const router = useRouter()

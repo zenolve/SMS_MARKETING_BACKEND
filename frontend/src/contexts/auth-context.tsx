@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 
@@ -29,18 +29,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null)
-    const [profile, setProfile] = useState<UserProfile | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+interface AuthProviderProps {
+    children: ReactNode
+    initialUser?: User | null
+    initialProfile?: UserProfile | null
+}
+
+export function AuthProvider({ children, initialUser = null, initialProfile = null }: AuthProviderProps) {
+    const [user, setUser] = useState<User | null>(initialUser)
+    const [profile, setProfile] = useState<UserProfile | null>(initialProfile)
+    const [isLoading, setIsLoading] = useState(!initialUser)
     const [error, setError] = useState<string | null>(null)
 
     // Agency impersonation state
     const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null)
 
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
 
-    async function fetchProfile() {
+    const fetchProfile = useCallback(async () => {
         // ... existing fetchProfile logic ...
         try {
             setIsLoading(true)
@@ -77,10 +83,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [supabase])
 
     useEffect(() => {
-        fetchProfile()
+        // Skip the initial fetch when server-provided initial data is available.
+        // The onAuthStateChange subscription handles all subsequent auth events.
+        if (!initialUser) {
+            fetchProfile()
+        }
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -95,14 +105,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => {
             subscription.unsubscribe()
         }
-    }, [])
+    }, [fetchProfile, supabase, initialUser])
 
     // Determine the active restaurant ID
     // 1. If impersonating (agency admin selected a restaurant), use that.
     // 2. Otherwise use the user's direct restaurant_id
     const activeRestaurantId = selectedRestaurantId || profile?.restaurant_id || null
 
-    const value: AuthContextType = {
+    const value: AuthContextType = useMemo(() => ({
         user,
         profile,
         restaurantId: activeRestaurantId,
@@ -112,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refetch: fetchProfile,
         selectedRestaurantId,
         setSelectedRestaurantId
-    }
+    }), [user, profile, activeRestaurantId, isLoading, error, fetchProfile, selectedRestaurantId, setSelectedRestaurantId])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

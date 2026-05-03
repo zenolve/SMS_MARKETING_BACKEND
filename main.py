@@ -6,11 +6,16 @@ from routers import agencies, restaurants, customers, campaigns, webhooks, sms, 
 
 settings = get_settings()
 
+from fastapi.middleware.gzip import GZipMiddleware
+
 app = FastAPI(
     title="SMS Marketing API",
     description="SMS marketing platform with Twilio integration",
     version="1.0.0"
 )
+
+# GZip compression
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS — browser requests are proxied via Next.js (/api/*)
 # so this only needs to allow the Next.js dev server origin.
@@ -19,6 +24,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
     ],
     allow_credentials=True,
     allow_methods=["*"],

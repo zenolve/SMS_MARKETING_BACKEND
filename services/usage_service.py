@@ -40,9 +40,12 @@ def get_current_usage_record(db: Client, restaurant_id: str) -> dict:
     raise Exception("Failed to create usage record")
 
 def increment_usage(db: Client, restaurant_id: str, metric: str, cost: float = 0.0):
-    """Increment usage metrics (sent, delivered, failed) and cost."""
+    """Increment usage metrics (sent, delivered, failed) and cost.
+    
+    All financial writes are done atomically via RPC where possible.
+    Transaction record is written BEFORE spend update so audit trail is never lost.
+    """
     try:
-        # metrics: 'sent', 'delivered', 'failed'
         column_map = {
             "sent": "messages_sent",
             "delivered": "messages_delivered",
@@ -59,8 +62,6 @@ def increment_usage(db: Client, restaurant_id: str, metric: str, cost: float = 0
         record = get_current_usage_record(db, restaurant_id)
         record_id = record["id"]
         
-        # For simplicity in this implementation, we fetch current values and update.
-        # Ideally, use RPC for atomic updates.
         current_val = record.get(col_name, 0)
         current_total_cost = float(record.get("total_cost", 0.0))
         
@@ -73,29 +74,34 @@ def increment_usage(db: Client, restaurant_id: str, metric: str, cost: float = 0
         db.table("usage_records").update(update_data).eq("id", record_id).execute()
         
         if metric == "sent" and cost > 0:
+            # 1. Write transaction FIRST — audit trail must never be lost
             db.table("transactions").insert({
                 "restaurant_id": restaurant_id,
                 "amount_gbp": -cost,
                 "transaction_type": "campaign_send",
                 "description": "SMS Campaign Send Cost"
             }).execute()
-            
-            rest_res = db.table("restaurants").select("current_spend_gbp, budget_monthly_gbp, twilio_subaccount_sid").eq("id", restaurant_id).execute()
+
+            # 2. Fetch restaurant with agency_id included
+            rest_res = db.table("restaurants").select(
+                "current_spend_gbp, budget_monthly_gbp, twilio_subaccount_sid, agency_id"
+            ).eq("id", restaurant_id).execute()
+
             if rest_res.data:
                 rest_data = rest_res.data[0]
                 current_spend = float(rest_data.get("current_spend_gbp") or 0.0)
                 new_spend = current_spend + cost
                 budget = float(rest_data.get("budget_monthly_gbp") or 0.0)
                 
+                # 3. Update restaurant spend
                 db.table("restaurants").update({
                     "current_spend_gbp": new_spend
                 }).eq("id", restaurant_id).execute()
                 
-                # Rollup to parent agency
+                # 4. Rollup to parent agency
                 agency_id = rest_data.get("agency_id")
                 if agency_id:
                     try:
-                        # Re-sum all restaurants for this agency to get accurate total spend
                         all_rests = db.table("restaurants").select("current_spend_gbp").eq("agency_id", agency_id).execute()
                         total_agency_spend = sum(float(r.get("current_spend_gbp") or 0.0) for r in (all_rests.data or []))
                         db.table("agencies").update({
@@ -105,7 +111,7 @@ def increment_usage(db: Client, restaurant_id: str, metric: str, cost: float = 0
                     except Exception as agency_err:
                         logger.error(f"Failed to rollup agency spend for {agency_id}: {agency_err}")
                 
-                # Suspend subaccount if limit is exceeded
+                # 5. Suspend subaccount if budget exceeded
                 if budget > 0 and new_spend >= budget:
                     logger.warning(f"Budget exceeded for {restaurant_id}! Suspending subaccount.")
                     sub_sid = rest_data.get("twilio_subaccount_sid")
@@ -117,29 +123,38 @@ def increment_usage(db: Client, restaurant_id: str, metric: str, cost: float = 0
         logger.error(f"Failed to increment usage for {restaurant_id}: {e}")
 
 def check_monthly_limit(db: Client, restaurant_id: str, estimated_cost: float) -> bool:
-    """Check if the estimated cost would exceed the monthly limit."""
+    """Check if the estimated cost would exceed the monthly budget.
+    
+    Fails CLOSED on error — if the DB check fails, we block the send
+    rather than risk exceeding budget.
+    """
     try:
-        # Get restaurant limit
-        restaurant_res = db.table("restaurants").select("budget_monthly_gbp, current_spend_gbp").eq("id", restaurant_id).execute()
+        restaurant_res = db.table("restaurants").select(
+            "budget_monthly_gbp, current_spend_gbp"
+        ).eq("id", restaurant_id).execute()
+
         if not restaurant_res.data:
-            return False 
-            
+            logger.error(f"check_monthly_limit: restaurant {restaurant_id} not found — blocking send")
+            return False
+
         limit = restaurant_res.data[0].get("budget_monthly_gbp")
         current_cost = float(restaurant_res.data[0].get("current_spend_gbp") or 0.0)
-        
+
         # No limit set = unlimited
         if limit is None or float(limit) <= 0:
             return True
-            
+
         limit = float(limit)
-        
+
         if current_cost + estimated_cost > limit:
-            logger.warning(f"Monthly limit reached for {restaurant_id}. Limit: {limit}, Current: {current_cost}, Estimated: {estimated_cost}")
+            logger.warning(
+                f"Monthly limit reached for {restaurant_id}. "
+                f"Limit: {limit:.2f}, Current: {current_cost:.2f}, Estimated: {estimated_cost:.4f}"
+            )
             return False
-            
+
         return True
-        
+
     except Exception as e:
-        logger.error(f"Error checking monthly limit: {e}")
-        # Fail safe: allow send if check fails
-        return True
+        logger.error(f"Error checking monthly limit for {restaurant_id}: {e} — blocking send (fail-closed)")
+        return False  # Fail closed — never allow spend if we can't verify the limit

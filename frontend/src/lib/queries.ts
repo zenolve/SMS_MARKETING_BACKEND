@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { agencyApi, restaurantApi, customerApi, campaignApi, transactionApi } from './api'
+import { agencyApi, restaurantApi, customerApi, campaignApi, transactionApi, statsApi } from './api'
 
 // ============ Agency Queries ============
 export function useAgencies() {
@@ -78,6 +78,7 @@ export function useRestaurantStats(id: string | null) {
             return data
         },
         enabled: !!id,
+        staleTime: 5 * 60 * 1000, // 5 minutes — stats change infrequently
     })
 }
 
@@ -102,6 +103,7 @@ export function useRestaurantMessages(id: string | null, limit = 50) {
             return data
         },
         enabled: !!id,
+        staleTime: 30 * 1000, // 30 seconds — messages are near-real-time
     })
 }
 
@@ -321,5 +323,27 @@ export function useRestaurantTransactions(restaurantId: string | null) {
             return data as Transaction[]
         },
         enabled: !!restaurantId,
+    })
+}
+
+// ============ Agency Dashboard Combined Query ============
+export function useAgencyDashboardData(agencyId: string | undefined) {
+    return useQuery({
+        queryKey: ['agency-dashboard', agencyId],
+        queryFn: async () => {
+            if (!agencyId) return null
+            const [restaurants, stats, transactions] = await Promise.all([
+                agencyApi.getRestaurants(agencyId),
+                statsApi.getAgencyStats(agencyId),
+                transactionApi.getAgencyTransactions(agencyId),
+            ])
+            return {
+                restaurants: restaurants.data,
+                stats: stats.data,
+                transactions: transactions.data,
+            }
+        },
+        staleTime: 3 * 60 * 1000, // 3 minutes
+        enabled: !!agencyId,
     })
 }

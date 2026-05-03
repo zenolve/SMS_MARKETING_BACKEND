@@ -4,5 +4,7 @@ supabase
 twilio
 python-dotenv
 pydantic
+email-validator
 pydantic-settings
 python-multipart
+cryptography

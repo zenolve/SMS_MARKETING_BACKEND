@@ -7,19 +7,15 @@ import { Badge } from '@/components/ui/badge'
 import {
     Building2,
     Users,
-    TrendingUp,
-    Phone,
     ArrowRight,
     Plus,
-    Euro,
+    PoundSterling,
     MessageSquare,
     Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/auth-context'
-import { useAgencyRestaurants, useAgencies } from '@/lib/queries'
-import { useQuery } from '@tanstack/react-query'
-import { statsApi, transactionApi } from '@/lib/api'
+import { useAgencies, useAgencyDashboardData } from '@/lib/queries'
 import { format } from 'date-fns'
 
 const statusColors = {
@@ -36,53 +32,36 @@ export default function AgencyDashboard() {
     const { data: agencies } = useAgencies()
     const agencyId = agencies?.[0]?.id
 
-    // Fetch real restaurants via agency scope
-    const { data: restaurantsData = [], isLoading } = useAgencyRestaurants(agencyId || '')
+    // Fetch all dashboard data in a single combined query
+    const { data: dashboardData, isLoading } = useAgencyDashboardData(agencyId)
+    const restaurants = dashboardData?.restaurants ?? []
+    const stats = dashboardData?.stats
+    const transactions = dashboardData?.transactions
 
     // Aggregate stats from real data
-    const totalRestaurants = restaurantsData.length
-    const totalCustomers = restaurantsData.reduce((acc: number, r: any) => acc + (r.total_customers || 0), 0)
-    const totalMessages = restaurantsData.reduce((acc: number, r: any) => acc + (r.total_messages_sent || 0), 0)
+    const totalRestaurants = restaurants.length
+    const totalCustomers = restaurants.reduce((acc: number, r: any) => acc + (r.total_customers || 0), 0)
+    const totalMessages = restaurants.reduce((acc: number, r: any) => acc + (r.total_messages_sent || 0), 0)
 
-    // Fetch stats
-    const { data: agencyStats } = useQuery({
-        queryKey: ['agency-stats', agencyId],
-        queryFn: async () => {
-            const { data } = await statsApi.getAgencyStats(agencyId!)
-            return data
-        },
-        enabled: !!agencyId
-    })
-
-    // Fetch agency transactions
-    const { data: transactions } = useQuery({
-        queryKey: ['agency-transactions', agencyId],
-        queryFn: async () => {
-            const { data } = await transactionApi.getAgencyTransactions(agencyId!)
-            return data
-        },
-        enabled: !!agencyId
-    })
-
-    const stats = [
+    const statCards = [
         {
             title: 'Total Restaurants',
-            value: agencyStats?.total_restaurants?.value?.toString() || totalRestaurants.toString(),
-            change: agencyStats?.total_restaurants?.change || '+0 this month',
+            value: stats?.total_restaurants?.value?.toString() || totalRestaurants.toString(),
+            change: stats?.total_restaurants?.change || '+0 this month',
             icon: Building2,
             color: 'from-indigo-500 to-indigo-600',
         },
         {
             title: 'Active Customers',
-            value: agencyStats?.active_customers?.value?.toLocaleString() || totalCustomers.toLocaleString(),
-            change: agencyStats?.active_customers?.change || '+0',
+            value: stats?.active_customers?.value?.toLocaleString() || totalCustomers.toLocaleString(),
+            change: stats?.active_customers?.change || '+0',
             icon: Users,
             color: 'from-purple-500 to-purple-600',
         },
         {
             title: 'Messages Sent',
-            value: agencyStats?.messages_sent?.value ? (agencyStats.messages_sent.value > 1000 ? `${(agencyStats.messages_sent.value / 1000).toFixed(1)}K` : agencyStats.messages_sent.value.toString()) : (totalMessages > 1000 ? `${(totalMessages / 1000).toFixed(1)}K` : totalMessages.toString()),
-            change: agencyStats?.messages_sent?.change || 'this month',
+            value: stats?.messages_sent?.value ? (stats.messages_sent.value > 1000 ? `${(stats.messages_sent.value / 1000).toFixed(1)}K` : stats.messages_sent.value.toString()) : (totalMessages > 1000 ? `${(totalMessages / 1000).toFixed(1)}K` : totalMessages.toString()),
+            change: stats?.messages_sent?.change || 'this month',
             icon: MessageSquare,
             color: 'from-emerald-500 to-emerald-600',
         },
@@ -90,7 +69,7 @@ export default function AgencyDashboard() {
             title: 'Monthly Budget capacity',
             value: `£${(agencies?.[0]?.budget_monthly_gbp || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             change: `£${(agencies?.[0]?.current_spend_gbp || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} spent`,
-            icon: Euro,
+            icon: PoundSterling,
             color: 'from-amber-500 to-amber-600',
         },
     ]
@@ -126,7 +105,7 @@ export default function AgencyDashboard() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {stats.map((stat) => (
+                {statCards.map((stat) => (
                     <Card key={stat.title} className="bg-card border-border backdrop-blur-sm">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between">
@@ -173,7 +152,7 @@ export default function AgencyDashboard() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {restaurantsData.map((restaurant: any) => (
+                                    {restaurants.map((restaurant: any) => (
                                         <tr key={restaurant.id} className="border-b border-border hover:bg-muted/50">
                                             <td className="py-4 px-4">
                                                 <div className="flex items-center gap-3">
@@ -235,7 +214,7 @@ export default function AgencyDashboard() {
                                         </tr>
                                     ) : (
                                         transactions.slice(0, 5).map((tx: any) => {
-                                            const relatedRest = restaurantsData.find((r: any) => r.id === tx.restaurant_id)
+                                            const relatedRest = restaurants.find((r: any) => r.id === tx.restaurant_id)
                                             return (
                                                 <tr key={tx.id} className="border-b border-border hover:bg-muted/50">
                                                     <td className="py-4 px-4 text-sm text-foreground">

@@ -23,6 +23,9 @@ interface AgencySettings {
     email: string
     phone: string
     twilio_account_sid: string
+    twilio_auth_token: string
+    twilio_phone_number: string
+    twilio_messaging_service_sid: string
 }
 
 export default function AgencySettingsPage() {
@@ -64,6 +67,9 @@ export default function AgencySettingsPage() {
                     email: agency.email,
                     phone: agency.phone || '',
                     twilio_account_sid: agency.twilio_account_sid || '',
+                    twilio_auth_token: agency.twilio_auth_token || '',
+                    twilio_phone_number: agency.twilio_phone_number || '',
+                    twilio_messaging_service_sid: agency.twilio_messaging_service_sid || '',
                 })
             }
 
@@ -89,6 +95,9 @@ export default function AgencySettingsPage() {
                 email: data.email,
                 phone: data.phone,
                 twilio_account_sid: data.twilio_account_sid,
+                twilio_auth_token: data.twilio_auth_token,
+                twilio_phone_number: data.twilio_phone_number,
+                twilio_messaging_service_sid: data.twilio_messaging_service_sid,
             })
 
             toast.success('Settings saved successfully')
@@ -173,15 +182,43 @@ export default function AgencySettingsPage() {
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="twilio_account_sid">Twilio Account SID</Label>
-                                    <Input
-                                        id="twilio_account_sid"
-                                        type="password"
-                                        placeholder="AC..."
-                                        {...register('twilio_account_sid')}
-                                    />
-                                    <p className="text-xs text-muted-foreground">Your primary Twilio Account SID for subaccount management.</p>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="twilio_account_sid">Twilio Account SID</Label>
+                                        <Input
+                                            id="twilio_account_sid"
+                                            type="password"
+                                            placeholder="AC..."
+                                            {...register('twilio_account_sid')}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Your primary Twilio Account SID.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="twilio_auth_token">Twilio Auth Token</Label>
+                                        <Input
+                                            id="twilio_auth_token"
+                                            type="password"
+                                            placeholder="Auth Token..."
+                                            {...register('twilio_auth_token')}
+                                        />
+                                        <p className="text-xs text-muted-foreground">The Auth Token associated with the Account SID.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="twilio_phone_number">Twilio Phone Number (Optional)</Label>
+                                        <Input
+                                            id="twilio_phone_number"
+                                            placeholder="+1234567890"
+                                            {...register('twilio_phone_number')}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="twilio_messaging_service_sid">Twilio Messaging Service SID (Optional)</Label>
+                                        <Input
+                                            id="twilio_messaging_service_sid"
+                                            placeholder="MG..."
+                                            {...register('twilio_messaging_service_sid')}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="flex justify-end pt-4">
                                     <Button type="submit" disabled={isSaving || !isDirty}>

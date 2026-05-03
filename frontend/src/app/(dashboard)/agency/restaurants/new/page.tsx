@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, Loader2, Building2, MapPin, Mail, Phone, Clock, Euro } from 'lucide-react'
+import { ArrowLeft, Loader2, Building2, MapPin, Mail, Phone, Clock, PoundSterling } from 'lucide-react'
 import { z } from 'zod'
 import { restaurantApi, agencyApi } from '@/lib/api'
 
@@ -114,7 +114,10 @@ export default function NewRestaurantPage() {
             router.push('/agency/restaurants')
         } catch (error: any) {
             console.error('Error creating restaurant:', error)
-            const msg = error.response?.data?.detail || 'Failed to create restaurant'
+            const msg = error.response?.data?.detail
+                || error.response?.data?.message
+                || error.message
+                || 'Failed to create restaurant'
             toast.error(msg)
         } finally {
             setIsSubmitting(false)
@@ -298,8 +301,8 @@ export default function NewRestaurantPage() {
 
                             <div className="space-y-2">
                                 <Label htmlFor="spending_limit" className="text-foreground flex items-center gap-2">
-                                    <Euro className="h-4 w-4 text-muted-foreground" />
-                                    Monthly Budget (€)
+                                    <PoundSterling className="h-4 w-4 text-muted-foreground" />
+                                    Monthly Budget (£)
                                 </Label>
                                 <Input
                                     id="spending_limit"

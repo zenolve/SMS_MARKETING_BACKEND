@@ -10,13 +10,25 @@ const api = axios.create({
     },
 })
 
+const supabase = createClient()
+let cachedAccessToken: string | null = null
+let cachedTokenAt = 0
+const TOKEN_CACHE_TTL_MS = 30_000
+
 // Add auth header to requests
 api.interceptors.request.use(async (config) => {
-    const supabase = createClient()
+    const now = Date.now()
+    if (cachedAccessToken && now - cachedTokenAt < TOKEN_CACHE_TTL_MS) {
+        config.headers.Authorization = `Bearer ${cachedAccessToken}`
+        return config
+    }
+
     const { data: { session } } = await supabase.auth.getSession()
 
     if (session?.access_token) {
-        config.headers.Authorization = `Bearer ${session.access_token}`
+        cachedAccessToken = session.access_token
+        cachedTokenAt = now
+        config.headers.Authorization = `Bearer ${cachedAccessToken}`
     }
 
     return config
@@ -35,7 +47,11 @@ export const agencyApi = {
 }
 
 export const twilioApi = {
-    search: (areaCode: string) => api.get(`/twilio/available-numbers?area_code=${areaCode}&limit=10`),
+    search: (areaCode: string, restaurantId?: string) => {
+        const params = new URLSearchParams({ area_code: areaCode, limit: '10' })
+        if (restaurantId) params.append('restaurant_id', restaurantId)
+        return api.get(`/twilio/available-numbers?${params.toString()}`)
+    },
     buy: (data: { phone_number: string, restaurant_id: string }) => api.post('/twilio/buy-number', data),
 }
 

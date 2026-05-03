@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
@@ -67,30 +67,32 @@ interface SidebarProps {
     businessName?: string
 }
 
-export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
-    const pathname = usePathname()
+interface SidebarNavContentProps {
+    navItems: NavItem[]
+    pathname: string
+    isImpersonating: boolean
+    userEmail?: string
+    businessName?: string
+    userRole: 'agency_admin' | 'restaurant_admin'
+    onMobileClose: () => void
+    onLogout: () => void
+    onStopManaging: () => void
+}
+
+const SidebarNavContent = React.memo(function SidebarNavContent({
+    navItems,
+    pathname,
+    isImpersonating,
+    userEmail,
+    businessName,
+    userRole,
+    onMobileClose,
+    onLogout,
+    onStopManaging,
+}: SidebarNavContentProps) {
     const router = useRouter()
-    const supabase = createClient()
-    const { selectedRestaurantId, setSelectedRestaurantId } = useAuth()
-    const [isMobileOpen, setIsMobileOpen] = useState(false)
 
-    const isImpersonating = !!selectedRestaurantId && userRole === 'agency_admin'
-    const navItems = isImpersonating ? restaurantNavItems :
-        userRole === 'agency_admin' ? agencyNavItems : restaurantNavItems
-
-    async function handleLogout() {
-        await supabase.auth.signOut()
-        router.push('/login')
-        toast.success('Logged out successfully')
-    }
-
-    const handleStopManaging = () => {
-        setSelectedRestaurantId(null)
-        router.push('/agency/dashboard')
-        toast.info('Stopped managing restaurant')
-    }
-
-    const NavContent = () => (
+    return (
         <div className="flex flex-col h-full">
             {/* Logo */}
             <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border/50">
@@ -115,7 +117,7 @@ export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
                         variant="outline"
                         size="sm"
                         className="w-full text-[10px] h-7 border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
-                        onClick={handleStopManaging}
+                        onClick={onStopManaging}
                     >
                         <LogOut className="w-3 h-3 mr-1" />
                         Stop Managing
@@ -131,7 +133,8 @@ export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
                         <Link
                             key={item.href}
                             href={item.href}
-                            onClick={() => setIsMobileOpen(false)}
+                            prefetch={true}
+                            onClick={onMobileClose}
                             className={cn(
                                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all outline-none',
                                 isActive
@@ -145,6 +148,15 @@ export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
                         </Link>
                     )
                 })}
+                <div className="mt-4 pt-4 border-t border-sidebar-border/30">
+                    <button
+                        onClick={onLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all outline-none text-destructive hover:bg-destructive/10"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        Log out
+                    </button>
+                </div>
             </nav>
 
             {/* User Profile */}
@@ -176,7 +188,7 @@ export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                            onClick={handleLogout}
+                            onClick={onLogout}
                             className="text-destructive focus:text-destructive"
                         >
                             <LogOut className="mr-2 h-4 w-4" />
@@ -187,12 +199,50 @@ export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
             </div>
         </div>
     )
+})
+
+export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
+    const pathname = usePathname()
+    const router = useRouter()
+    const supabase = createClient()
+    const { selectedRestaurantId, setSelectedRestaurantId } = useAuth()
+    const [isMobileOpen, setIsMobileOpen] = useState(false)
+
+    const isImpersonating = !!selectedRestaurantId && userRole === 'agency_admin'
+    const navItems = isImpersonating ? restaurantNavItems :
+        userRole === 'agency_admin' ? agencyNavItems : restaurantNavItems
+
+    const handleLogout = useCallback(async () => {
+        await supabase.auth.signOut()
+        router.push('/login')
+        toast.success('Logged out successfully')
+    }, [supabase, router])
+
+    const handleStopManaging = useCallback(() => {
+        setSelectedRestaurantId(null)
+        router.push('/agency/dashboard')
+        toast.info('Stopped managing restaurant')
+    }, [setSelectedRestaurantId, router])
+
+    const handleMobileClose = useCallback(() => {
+        setIsMobileOpen(false)
+    }, [])
 
     return (
         <>
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex flex-col w-64 bg-sidebar border-r border-sidebar-border/50 backdrop-blur-sm">
-                <NavContent />
+                <SidebarNavContent
+                    navItems={navItems}
+                    pathname={pathname}
+                    isImpersonating={isImpersonating}
+                    userEmail={userEmail}
+                    businessName={businessName}
+                    userRole={userRole}
+                    onMobileClose={handleMobileClose}
+                    onLogout={handleLogout}
+                    onStopManaging={handleStopManaging}
+                />
             </aside>
 
             {/* Mobile Sidebar */}
@@ -208,7 +258,17 @@ export function Sidebar({ userRole, userEmail, businessName }: SidebarProps) {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
                     <SheetTitle className="sr-only">Menu</SheetTitle>
-                    <NavContent />
+                    <SidebarNavContent
+                        navItems={navItems}
+                        pathname={pathname}
+                        isImpersonating={isImpersonating}
+                        userEmail={userEmail}
+                        businessName={businessName}
+                        userRole={userRole}
+                        onMobileClose={handleMobileClose}
+                        onLogout={handleLogout}
+                        onStopManaging={handleStopManaging}
+                    />
                 </SheetContent>
             </Sheet>
         </>

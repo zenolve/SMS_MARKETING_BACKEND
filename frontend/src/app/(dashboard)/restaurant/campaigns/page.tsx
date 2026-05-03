@@ -21,7 +21,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { SchedulerHeatmap } from '@/components/campaigns/scheduler-heatmap'
+import dynamic from 'next/dynamic'
 import {
     MessageSquare,
     Plus,
@@ -37,6 +37,21 @@ import {
     Loader2,
     AlertCircle,
 } from 'lucide-react'
+
+const SchedulerHeatmap = dynamic(
+    async () => {
+        try {
+            const mod = await import('@/components/campaigns/scheduler-heatmap')
+            return { default: mod.SchedulerHeatmap }
+        } catch {
+            return { default: () => <p className="text-destructive">Failed to load scheduler. Please refresh.</p> }
+        }
+    },
+    {
+        ssr: false,
+        loading: () => <Loader2 className="h-6 w-6 animate-spin" />,
+    }
+)
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
@@ -185,7 +200,7 @@ export default function CampaignsPage() {
                             />
                         </div>
                         <div className="flex gap-2">
-                            {['sent', 'scheduled', 'draft'].map((status) => (
+                            {['sent', 'scheduled', 'sending', 'failed', 'draft'].map((status) => (
                                 <Button
                                     key={status}
                                     variant={statusFilter === status ? 'default' : 'outline'}

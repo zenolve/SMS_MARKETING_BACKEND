@@ -1,3 +1,45 @@
+# Environment & Secrets
 .env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
 venv/
+env/
+.venv*/
+
+# Logs & Temporary Outputs
+*.log
+*.txt
+!requirements.txt
+!README.md
+!SETUP_GUIDE.md
+*.json
+
+# SQL Files (Ignore temporary scripts in root, keep database structure)
+/*.sql
+!/database_complete.sql
+!/database_reset.sql
+!migrations/
+!supabase/
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDEs
+.vscode/
+.idea/
+
+# Frontend/Node
+node_modules/
+dist/
+build/
+test_twilio_payload.py
+test_encryption.py

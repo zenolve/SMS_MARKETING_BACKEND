@@ -100,6 +100,7 @@ export default function AgencyTransactionsPage() {
                                 <tr className="border-b border-border">
                                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Source</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Restaurant</th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Type</th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Description</th>
                                     <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Amount (£)</th>
@@ -108,7 +109,7 @@ export default function AgencyTransactionsPage() {
                             <tbody>
                                 {transactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-12 text-center">
+                                        <td colSpan={6} className="py-12 text-center">
                                             <Receipt className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                                             <p className="text-muted-foreground">No transactions recorded yet.</p>
                                             <p className="text-sm text-muted-foreground mt-1">Transactions appear when Admin allocates budget or your restaurants incur charges.</p>
@@ -131,6 +132,16 @@ export default function AgencyTransactionsPage() {
                                                         <Badge variant="outline" className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20">
                                                             Restaurant
                                                         </Badge>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm">
+                                                    {tx.restaurant_name ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-foreground">{tx.restaurant_name}</span>
+                                                            <span className="text-xs text-muted-foreground">{tx.restaurant_email}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">—</span>
                                                     )}
                                                 </td>
                                                 <td className="py-3 px-4">

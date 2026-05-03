@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Building2, Users, MessageSquare, Euro, LayoutDashboard, Edit2, Phone, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Building2, Users, MessageSquare, PoundSterling, LayoutDashboard, Edit2, Phone, TrendingUp } from 'lucide-react'
 import { useRestaurant, useRestaurantStats } from '@/lib/queries'
 import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -59,8 +59,8 @@ export default function RestaurantAgencyViewPage() {
         },
         {
             title: 'Associated Cost',
-            value: `€${stats?.cost?.total || '0.00'}`,
-            icon: Euro,
+            value: `£${stats?.cost?.total || '0.00'}`,
+            icon: PoundSterling,
             color: 'text-amber-500',
             bg: 'bg-amber-500/10',
         },

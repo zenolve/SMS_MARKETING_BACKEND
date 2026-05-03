@@ -72,7 +72,7 @@ async def test_scheduled_logic_fallback(mock_db, mock_twilio):
         
         await send_campaign("camp789")
         
-        # Verify it falls back to immediate send because lead time is too short for Twilio Native
-        # NOTE: If we have a Messaging Service SID, it uses send_immediate_message, NOT send_message_with_phone
-        mock_twilio["immediate"].assert_called_once()
+        # Verify it strictly fails because lead time is too short for Twilio Native
+        mock_twilio["immediate"].assert_not_called()
         mock_twilio["scheduled"].assert_not_called()
+        mock_twilio["phone"].assert_not_called()

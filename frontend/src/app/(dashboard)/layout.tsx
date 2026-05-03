@@ -21,7 +21,7 @@ export default async function DashboardLayout({
     const adminClient = createAdminClient()
     const { data: profile, error: profileError } = await adminClient
         .from('user_profiles')
-        .select('role, is_verified, business_name, restaurant_id')
+        .select('id, role, is_verified, business_name, restaurant_id')
         .eq('id', user.id)
         .single()
 
@@ -39,7 +39,7 @@ export default async function DashboardLayout({
     const userRole = profile.role || 'restaurant_admin'
 
     return (
-        <AuthProvider>
+        <AuthProvider initialUser={user} initialProfile={profile}>
             <div className="flex h-screen bg-background">
                 <Sidebar
                     userRole={userRole}

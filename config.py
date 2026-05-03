@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     # API
     api_base_url: str = "http://localhost:8000"
     secret_key: str = "dev-secret-key"
+    encryption_key: str = ""
+    
+    # SMTP Email
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
     
     class Config:
         env_file = ".env"

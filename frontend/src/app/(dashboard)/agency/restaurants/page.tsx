@@ -261,8 +261,8 @@ export default function RestaurantsPage() {
                                             <TableCell>
                                                 <div className="space-y-1">
                                                     <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-foreground">€{spending.toFixed(2)}</span>
-                                                        <span className="text-muted-foreground">€{limit}</span>
+                                                        <span className="text-foreground">£{spending.toFixed(2)}</span>
+                                                        <span className="text-muted-foreground">£{limit}</span>
                                                     </div>
                                                     <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
                                                         <div

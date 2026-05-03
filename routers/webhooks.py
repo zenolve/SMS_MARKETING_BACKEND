@@ -8,6 +8,10 @@ from services.usage_service import increment_usage
 router = APIRouter()
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @router.post("/twilio/status")
 async def twilio_status_callback(
     request: Request,
@@ -44,8 +48,15 @@ async def twilio_status_callback(
     elif status == "sent":
         update_data["sent_at"] = datetime.utcnow().isoformat()
     
-    # Update message record
-    result = db.table("sms_messages").update(update_data).eq("twilio_message_sid", message_sid).execute()
+    # Lookup first to support both legacy and canonical SID column names.
+    message_lookup = db.table("sms_messages").select("id, campaign_id, restaurant_id").or_(
+        f"twilio_message_sid.eq.{message_sid},twilio_sid.eq.{message_sid}"
+    ).limit(1).execute()
+    if not message_lookup.data:
+        return {"status": "received", "matched": False}
+
+    message_id = message_lookup.data[0]["id"]
+    result = db.table("sms_messages").update(update_data).eq("id", message_id).execute()
     
     # Update campaign statistics if message found
     if result.data:
@@ -113,3 +124,34 @@ async def twilio_incoming_message(
         return {"status": "opt_in_processed", "phone": from_number}
     
     return {"status": "received"}
+
+
+@router.post("/twilio/usage-trigger")
+async def twilio_usage_trigger(
+    request: Request,
+    db: Client = Depends(get_db)
+):
+    """Handle Twilio Usage Trigger alerts to suspend subaccount."""
+    form_data = await request.form()
+    
+    account_sid = form_data.get("AccountSid")
+    
+    if not account_sid:
+        raise HTTPException(status_code=400, detail="Missing AccountSid")
+        
+    # Find restaurant with this subaccount SID
+    restaurant_res = db.table("restaurants").select("id").eq("twilio_subaccount_sid", account_sid).execute()
+    if not restaurant_res.data:
+        return {"status": "ignored", "reason": "No matching restaurant"}
+        
+    restaurant_id = restaurant_res.data[0]["id"]
+    
+    from services.twilio_service import suspend_subaccount
+    success = suspend_subaccount(account_sid)
+    
+    if success:
+        logger.info(f"Suspended Twilio subaccount {account_sid} for restaurant {restaurant_id} due to usage limit")
+    else:
+        logger.error(f"Failed to suspend Twilio subaccount {account_sid} for restaurant {restaurant_id}")
+        
+    return {"status": "processed", "suspended": success}

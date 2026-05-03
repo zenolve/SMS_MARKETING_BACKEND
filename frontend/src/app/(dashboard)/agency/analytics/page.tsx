@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRestaurants } from '@/lib/queries'
-import { BarChart3, TrendingUp, Users, MessageSquare, Euro } from 'lucide-react'
+import { BarChart3, TrendingUp, Users, MessageSquare, PoundSterling } from 'lucide-react'
 
 export default function AgencyAnalyticsPage() {
     const { data: restaurants = [], isLoading } = useRestaurants()
@@ -55,10 +55,10 @@ export default function AgencyAnalyticsPage() {
                 <Card className="bg-card border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Current Month Spend</CardTitle>
-                        <Euro className="h-4 w-4 text-muted-foreground" />
+                        <PoundSterling className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">€{totalSpend.toFixed(2)}</div>
+                        <div className="text-2xl font-bold">£{totalSpend.toFixed(2)}</div>
                         <p className="text-xs text-muted-foreground">
                             Aggregate spending
                         </p>
@@ -85,7 +85,7 @@ export default function AgencyAnalyticsPage() {
                                         {restaurant.total_messages_sent.toLocaleString()} msgs
                                     </p>
                                     <p className="text-sm text-muted-foreground">
-                                        €{(restaurant.current_month_spend || 0).toFixed(2)}
+                                        £{(restaurant.current_month_spend || 0).toFixed(2)}
                                     </p>
                                 </div>
                             </div>

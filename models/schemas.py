@@ -10,6 +10,9 @@ class AgencyBase(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_phone_number: Optional[str] = None
+    twilio_messaging_service_sid: Optional[str] = None
     budget_monthly_gbp: Optional[float] = 0.0
 
 
@@ -23,6 +26,9 @@ class AgencyUpdate(BaseModel):
     phone: Optional[str] = None
     status: Optional[str] = None
     twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_phone_number: Optional[str] = None
+    twilio_messaging_service_sid: Optional[str] = None
     budget_monthly_gbp: Optional[float] = None
 
 
@@ -30,9 +36,12 @@ class Agency(AgencyBase):
     id: UUID
     status: str
     twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_phone_number: Optional[str] = None
+    twilio_messaging_service_sid: Optional[str] = None
     current_spend_gbp: Optional[float] = 0.0
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -102,7 +111,7 @@ class Restaurant(RestaurantBase):
     total_customers: int = 0
     total_messages_sent: int = 0
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -140,7 +149,7 @@ class Customer(CustomerBase):
     opt_in_date: Optional[datetime] = None
     opt_out_date: Optional[datetime] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -184,7 +193,7 @@ class Campaign(CampaignBase):
     total_cost: float
     sent_at: Optional[datetime] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -243,8 +252,10 @@ class Transaction(TransactionBase):
     id: UUID
     restaurant_id: Optional[UUID] = None
     agency_id: Optional[UUID] = None
+    restaurant_name: Optional[str] = None
+    restaurant_email: Optional[str] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
